@@ -2410,11 +2410,9 @@ export default function Picture() {
 
 ### 第 1 步: 将设置状态的逻辑修改成 dispatch 的一个 action
 
-
+>https://zh-hans.react.dev/learn/extracting-state-logic-into-a-reducer#step-1-move-from-setting-state-to-dispatching-actions 查看官网例子  下面的步骤同步 。 同步查看day19天代码写法和自己写法的不同。
 
 ### 第 2 步: 编写一个 reducer 函数 
-
-
 
 ### 第 3 步: 在组件中使用 reducer
 
