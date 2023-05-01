@@ -1,0 +1,42 @@
+.avatar {
+  border-radius: 50%;
+}
+
+.person {
+  font-size: 20px;
+}
+
+.card {
+  width: 200px;
+  min-height: 200px;
+  border: 1px solid #666;
+  border-radius: 4px;
+}
+
+.col-ccc {
+  color: #ccc;
+}
+
+.propagation {
+  color: #f89723;
+  background-color: violet;
+}
+
+.cursor {
+  cursor: not-allowed;
+}
+
+.counter-content {
+  width: 100px;
+  height: 150px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.counter-content > h3 {
+  padding: 20px 0;
+}
+
+.hover {
+  background-color: #f89723;
+}

@@ -2408,13 +2408,506 @@ export default function Picture() {
 > 2. **编写** 一个 reducer 函数；
 > 3. 在你的组件中 **使用** reducer。
 
-### 第 1 步: 将设置状态的逻辑修改成 dispatch 的一个 action
+#### 第 1 步: 将设置状态的逻辑修改成 dispatch 的一个 action
 
->https://zh-hans.react.dev/learn/extracting-state-logic-into-a-reducer#step-1-move-from-setting-state-to-dispatching-actions 查看官网例子  下面的步骤同步 。 同步查看day19天代码写法和自己写法的不同。
+>https://zh-hans.react.dev/learn/extracting-state-logic-into-a-reducer#step-1-move-from-setting-state-to-dispatching-actions 查看官网例子  下面的步骤同步 。 同步查看day19天。官方写法和自己写法的不同。
+>
+>`````js
+>  const [tasks, dispatch] = useReducer(tasksReducer ,initialTasks)
+>  const handleAddTask = (text) => {
+>    dispatch({
+>      type: 'added',
+>      id: nextId++,
+>      text: text
+>    })
+>    // setTasks([
+>    //   ...tasks,
+>    //   {
+>    //     id: nextId++,
+>    //     text: text,
+>    //     done: false,
+>    //   }
+>    // ]);
+>  }
+>  const handleChangeStak = (task) => {
+>    dispatch({
+>      type: 'changed',
+>      task: task
+>    })
+>    // setTasks(
+>    //   tasks.map(task => {
+>    //     if (task.id === id) {
+>    //       return {
+>    //         ...task,
+>    //         text,
+>    //         done,
+>    //       }
+>    //     }
+>    //     return task
+>    //   })
+>    // )
+>  }
+>`````
+>
+>
 
-### 第 2 步: 编写一个 reducer 函数 
+#### 第 2 步: 编写一个 reducer 函数 
 
-### 第 3 步: 在组件中使用 reducer
+> 上面的代码使用了 `if/else` 语句，但是在 reducers 中使用 [switch 语句](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/switch) 是一种惯例。两种方式结果是相同的，但 `switch` 语句读起来一目了然。 
+
+`````js
+function tasksReducer(tasks, action) {
+  switch(action.type) {
+    case 'added': {
+      return [
+        ...tasks,
+        {
+          id: action.id,
+          text: action.text,
+          done: false
+        }
+      ]
+    }
+    case 'changed': {
+      return tasks.map(task => {
+        if (task.id === action.task.id) {
+          return action.task
+        }
+        return task
+      });
+    }
+    case 'remove': {
+      return tasks.filter(task => task.id !== action.id)
+    }
+      
+  }
+}
+`````
+
+#### 第 3 步: 在组件中使用 reducer
+
+> **`useReducer` 钩子接受 2 个参数：**
+>
+> 1. 一个 reducer 函数
+> 2. 一个初始的 state
+>
+> **它返回如下内容：**
+>
+> 1. 一个有状态的值
+> 2. 一个 dispatch 函数（用来 “派发” 用户操作给 reducer）****
+
+````js
+import { useReducer } from 'react';
+
+const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+````
+
+### 2、使用Immer 简化 reducers 
+
+> 与在平常的 state 中 [修改对象](https://zh-hans.react.dev/learn/updating-objects-in-state#write-concise-update-logic-with-immer) 和 [数组](https://zh-hans.react.dev/learn/updating-arrays-in-state#write-concise-update-logic-with-immer) 一样，你可以使用 `Immer` 这个库来简化 `reducer`。在这里，[`useImmerReducer`](https://github.com/immerjs/use-immer#useimmerreducer) 
+>
+> ````
+>   const [tasks, dispatch] = useImmerReducer(tasksImmerReducer, initialTasks); // 和reducer一样但是可以传入可以参入三个参数
+> 
+> // dispatch 用法和reducer一样
+> 
+> function tasksImmerReducer(draft, action) {
+>   switch(action.type) {
+>     case 'added': {
+>       draft.push({
+>         id: action.id,
+>         text: action.text,
+>         done: false
+>       });
+>       break;
+>     }
+>     case 'changed': {
+>       const index = draft.findIndex(t => t.id === action.task.id)
+>       draft[index] = action.task
+>       break;
+>     }
+>     case 'remove': {
+>       return draft.filter(t => t.id !== action.id)
+>     }
+>     default: {
+>       throw Error('未知 action：' + action.type);
+>     }
+>   }
+> }
+> ````
+>
+> 
+
+## 六、使用Context深层传递参数
+
+> 通常来说，你会通过 **props 将信息从父组件传递到子组件**。但是，如果你必须通过许多**中间组件向下传递 props**，或是在你应用中的许多组件需要相同的信息，传递 props 会变的十分冗长和不便。**Context** 允许父组件向其下层无论多深的任何组件提供信息，而无需通过 props 显式传递。 
+>
+> > ### 你将会学习到
+> >
+> > - 什么是 “prop 逐级透传”
+> > - 如何使用 context 代替重复的参数传递
+> > - Context 的常见用法
+> > - Context 的常见替代方案
+
+### 1、传递Props带来的问题
+
+> [传递 props](https://zh-hans.react.dev/learn/passing-props-to-a-component) 是将数据通过 UI 树显式传递到使用它的组件的好方法。 
+>
+> 但是当你需要在组件树中深层传递参数以及需要在组件间复用相同的参数时，传递 props 就会变得很麻烦。最近的根节点父组件可能离需要数据的组件很远，[状态提升](https://zh-hans.react.dev/learn/sharing-state-between-components) 到太高的层级会导致 “逐层传递 props” 的情况。 
+>
+> 
+
+![1682735927765](E:\reactLearn\assets\prop.png)
+
+### 2、Content: 传递props的另一种方法
+
+> 1. **创建** 一个 context。（你可以将其命名为 `LevelContext`, 因为它表示的是标题级别。)
+> 2. 在需要数据的组件内 **使用** 刚刚创建的 context。（`Heading` 将会使用 `LevelContext`。）
+> 3. 在指定数据的组件中 **提供** 这个 context。 （`Section` 将会提供 `LevelContext`。）
+>
+> Context 可以让父节点，甚至是很远的父节点都可以为其内部的整个组件树提供数据。 
+>
+> ![1682737953160](E:\reactLearn\assets\Context.png)
+
+#### Step1：创建context
+
+> 首先，你需要创建这个 context，并 **将其从一个文件中导出**，这样你的组件才可以使用它 
+>
+> ````js
+> // LevelContext.js 
+> import { createContext } from 'react';
+> export const LevelContext = createContext(1);
+> ````
+>
+> 
+
+#### Step2: 使用Context
+
+> 从 React 中引入 `useContext` Hook 以及你刚刚创建的 context: 
+>
+> ````js
+> import { useContext } from 'react';
+> import { LevelContext } from './LevelContext.js';
+> ````
+>
+> 删掉 `Propsn` 参数并从你刚刚引入的 `LevelContext` 中读取值： 
+>
+> > **注意：**`useContext` 是一个 Hook。和 `useState` 以及 `useReducer`一样，你只能在 React 组件中（**不是循环或者条件里**）立即调用 Hook。**useContext 告诉 React Heading 组件想要读取 LevelContext。** 
+>
+> ````js
+>   const level = useContext(LevelContext);
+> ````
+>
+> 修改一下 JSX，让 `Section` 组件代替 `Heading` 组件接收 level 参数： (具体代码查看day20)
+>
+> ````
+> <Section level={4}>
+>   <Heading>子子标题</Heading>
+>   <Heading>子子标题</Heading>
+>   <Heading>子子标题</Heading>
+> </Section>
+> ````
+>
+> > 注意！这个示例还不能运行。所有 headings 的尺寸都一样，因为 **即使你正在使用 context，但是你还没有提供它。** React 不知道从哪里获取这个 context！ 如果你不提供 context，React 会使用你在上一步指定的默认值 
+
+#### Step3: 提供Context
+
+> **把它们用 context provider 包裹起来**  以提供 `LevelContext` 给它们： 
+>
+> > 这告诉 React：“如果在 `<Section>` 组件中的任何子组件请求 `LevelContext`，给他们这个 `level`。”组件会使用 UI 树中在它上层最近的那个 `<LevelContext.Provider>` 传递过来的值。 
+>
+> `````js
+> import { LevelContext } from './LevelContext.js'; 
+> 
+> export default function Section({ level, children }) {
+>   return (
+>     <section className="section">
+>       <LevelContext.Provider value={level}> // value接收对应需要的props
+>         {children}
+>       </LevelContext.Provider>
+>     </section>
+>   );
+> }
+> `````
+>
+> > context代替prop写法过程
+> >
+> > 1. 你将一个 `level` 参数传递给 `<Section>`。
+> > 2. `Section` 把它的子元素包在 `<LevelContext.Provider value={level}>` 里面。
+> > 3. `Heading` 使用 `useContext(LevelContext)` 访问上层最近的 `LevelContext` 提供的值。
+
+### 3、在相同中间中使用并提供context
+
+> https://zh-hans.react.dev/learn/passing-data-deeply-with-context#using-and-providing-context-from-the-same-component  示例连接
+>
+> ````js
+> import {useContext} from 'react';
+> import {LevelContext} from './LevelContext';
+> // 使用levelContext替代Prop中的leave  这种方式比较适合树形结构组件
+> export default function PropsSection({level ,children}) {
+>   const levelContext = useContext(LevelContext)
+>   return (
+>    <>
+>     <section>
+>       <LevelContext.Provider value={levelContext + 1}>
+>         {children}
+>       </LevelContext.Provider>
+>     </section>
+>    </> 
+>   )
+> }
+> ````
+>
+> 
+
+### 4、Context会穿过中间层级的组件
+
+> 你可以在提供 context 的组件和使用它的组件之间的层级插入任意数量的组件。这包括像 `<div>` 这样的内置组件和你自己创建的组件。 
+>
+> >**!!!!!注意：**在 React 中，**覆盖来自上层的某些 context 的唯一方法是将子组件包裹到一个提供不同值的 context provider 中。** 
+>
+> **不同的 React context 不会覆盖彼此**
+>
+> > 你通过 `createContext()` 创建的每个 context 都和其他 context 完全分离，只有使用和提供 *那个特定的* context 的组件才会联系在一起。一个组件可以轻松地使用或者提供许多不同的 context。 
+
+### 5、context 使用时机
+
+> 使用 Context 看起来非常诱人！然而，这也意味着它也太容易被过度使用了。**如果你只想把一些 props 传递到多个层级中，这并不意味着你需要把这些信息放到 context 里。** 
+>
+> >在使用 context 之前，你可以考虑以下几种替代方案：
+> >
+> >1. **从 传递 props 开始。** 如果你的组件看起来不起眼，那么通过十几个组件向下传递一堆 props 并不罕见。这有点像是在埋头苦干，但是这样做可以让哪些组件用了哪些数据变得十分清晰！维护你代码的人会很高兴你用 props 让数据流变得更加清晰。
+> >2. **抽象组件并 将 JSX 作为 children 传递 给它们。** 如果你通过很多层不使用该数据的中间组件（并且只会向下传递）来传递数据，这通常意味着你在此过程中忘记了抽象组件。举个例子，你可能想传递一些像 `posts` 的数据 props 到不会直接使用这个参数的组件，类似 `<Layout posts={posts} />`。取而代之的是，让 `Layout` 把 `children` 当做一个参数，然后渲染 `<Layout><Posts posts={posts} /></Layout>`。这样就减少了定义数据的组件和使用数据的组件之间的层级。
+> >
+> >如果这两种方法都不适合你，再考虑使用 context。
+>
+> 
+
+### 6、Context使用场景
+
+> - **主题：** 如果你的应用允许用户更改其外观（例如暗夜模式），你可以在应用顶层放一个 context provider，并在需要调整其外观的组件中使用该 context。
+> - **当前账户：** 许多组件可能需要知道当前登录的用户信息。将它放到 context 中可以方便地在树中的任何位置读取它。某些应用还允许你同时操作多个账户（例如，以不同用户的身份发表评论）。在这些情况下，将 UI 的一部分包裹到具有不同账户数据的 provider 中会很方便。
+> - **路由：** 大多数路由解决方案在其内部使用 context 来保存当前路由。这就是每个链接“知道”它是否处于活动状态的方式。如果你创建自己的路由库，你可能也会这么做。
+> - **状态管理：** 随着你的应用的增长，最终在靠近应用顶部的位置可能会有很多 state。许多遥远的下层组件可能想要修改它们。通常 [将 reducer 与 context 搭配使用](https://zh-hans.react.dev/learn/scaling-up-with-reducer-and-context)来管理复杂的状态并将其传递给深层的组件来避免过多的麻烦。
+>
+> Context 不局限于静态值。如果你在下一次渲染时传递不同的值，React 将会更新读取它的所有下层组件！这就是 context 经常和 state 结合使用的原因。
+>
+>  
+
+### 7、总结
+
+> - Context 使组件向其下方的整个树提供信息。
+> - 传递 Context 的方法
+>   - 通过 `export const MyContext = createContext(defaultValue)` 创建并导出 context。
+>   - 在无论层级多深的任何子组件中，把 context 传递给 `useContext(MyContext)` Hook 来读取它。
+>   - 在父组件中把 children 包在 `<MyContext.Provider value={...}>` 中来提供 context。
+> - Context 会穿过中间的任何组件。
+> - Context 可以让你写出 “较为通用” 的组件。
+> - 在使用 context 之前，先试试传递 props 或者将 JSX 作为 `children` 传递。
+
+## 七、使用Reducer和Context来拓展你的应用
+
+> Reducer 可以整合组件的状态更新逻辑。Context 可以将信息深入传递给其他组件。你可以组合使用它们来共同管理一个复杂页面的状态。 
+>
+> >### 你将会学习到
+> >
+> >- 如何结合使用 reducer 和 context
+> >- 如何去避免通过 props 传递 state 和 dispatch
+> >- 如何将 context 和状态逻辑保存在一个单独的文件中
+>
+> 
+
+### 1、结合使用reducer和context
+
+> 下面将介绍如何结合使用 reducer 和 context：
+>
+> 1. **创建** context。
+> 2. 将 state 和 dispatch **放入** context。
+> 3. 在组件树的任何地方 **使用** context。
+
+#### 第一步：创建context
+
+> `useReducer` 返回当前的 `tasks` 和 `dispatch` 函数来让你更新它们： 
+>
+> ````js
+> const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+> ````
+>
+> 为了将它们从组件树往下传，你将 [创建](https://zh-hans.react.dev/learn/passing-data-deeply-with-context#step-2-use-the-context) 两个不同的 context：
+>
+> - `TasksContext` 提供当前的 tasks 列表。
+> - `TasksDispatchContext` 提供了一个函数可以让组件分发动作。
+
+#### 第二步：将state和dispatch函数放入context
+
+> 现在，你可以将所有的 context 导入 `TaskApp` 组件。获取 `useReducer()` 返回的 `tasks` 和 `dispatch` 并将它们 [提供](https://zh-hans.react.dev/learn/passing-data-deeply-with-context#step-3-provide-the-context) 给整个组件树： 
+>
+> ````js
+> import { TasksContext, TasksDispatchContext } from './TasksContext.js';
+> //  记住每一个context就是一个“组件”
+> export default function TaskApp() {
+>   const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+>   // ...
+>   return (
+>     <TasksContext.Provider value={tasks}>
+>       <TasksDispatchContext.Provider value={dispatch}>
+>         <AddTask
+>           onAddTask={handleAddTask}
+>         />
+>         <TaskList
+>           tasks={tasks}
+>           onChangeTask={handleChangeTask}
+>           onDeleteTask={handleDeleteTask}
+>         />
+>       </TasksDispatchContext.Provider>
+>     </TasksContext.Provider>
+>   );
+> }
+> ````
+>
+> 
+
+#### 第三步：在组件树中的任何地方使用context
+
+> 你将删除通过 props 传递的代码。 
+>
+> ````js
+> <TasksContext.Provider value={tasks}>
+>   <TasksDispatchContext.Provider value={dispatch}>
+>     <h1>Day off in Kyoto</h1>
+>     <AddTask />
+>     <TaskList />
+>   </TasksDispatchContext.Provider>
+> </TasksContext.Provider>
+> ````
+>
+> > **TasksContext和TasksDispatchContext下的任何子组件都可以使用useContext读取context**
+>
+> 任何组件都可以从 context 中读取 `dispatch` 函数并调用它，从而更新任务列表： 
+>
+> ````js
+> export default function AddTask() {
+>   const [text, setText] = useState('');
+>   const dispatch = useContext(TasksDispatchContext);
+>   // ...
+>   return (
+>     // ...
+>     <button onClick={() => {
+>       setText('');
+>       dispatch({
+>         type: 'added',
+>         id: nextId++,
+>         text: text,
+>       });
+>     }}>Add</button>
+>   )
+> ````
+>
+> 
+
+### 2、将相关逻辑迁移到一个文件当中
+
+> context如果有变的非常复杂且嵌套层数很深则需要把它迁移到对应的context文件中创建一个context组件进行集中管理`Provider`  ，此组件将所有部分连接在一起： 
+>
+> > 1. 它将管理 reducer 的状态。
+> > 2. 它将提供现有的 context 给组件树。
+> > 3. 它将 [把 `children` 作为 prop](https://zh-hans.react.dev/learn/passing-props-to-a-component#passing-jsx-as-children)，所以你可以传递 JSX。
+>
+> ````
+> export function TasksProvider({ children }) {
+>   const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+> 
+>   return (
+>     <TasksContext.Provider value={tasks}>
+>       <TasksDispatchContext.Provider value={dispatch}>
+>         {children}
+>       </TasksDispatchContext.Provider>
+>     </TasksContext.Provider>
+>   );
+> }
+> ````
+>
+> 这不会改变任何行为，但它会允许你之后进一步分割这些 context 或向这些函数添加一些逻辑。**现在所有的 context 和 reducer 连接部分都在 TasksContext.js 中。这保持了组件的干净和整洁，让我们专注于它们显示的内容，而不是它们从哪里获得数据：** 
+>
+> > ### 注意
+> >
+> > 像 `useTasks` 和 `useTasksDispatch` 这样的函数被称为 **自定义 Hook。** 如果你的函数名以 `use` 开头，它就被认为是一个自定义 Hook。这让你可以使用其他 Hook，比如 `useContext`。
+
+### 3、总结
+
+> - 你可以将 reducer 与 context 相结合，让任何组件读取和更新它的状态。
+> - 为子组件提供 state 和 dispatch 函数：
+>   - 创建两个 context (一个用于 state,一个用于 dispatch 函数)。
+>   - 让组件的 context 使用 reducer。
+>   - 使用组件中需要读取的 context。
+> - 你可以通过将所有传递信息的代码移动到单个文件中来进一步整理组件。 
+>   - 你可以导出一个像 `TasksProvider` 可以提供 context 的组件。
+>   - 你也可以导出像 `useTasks` 和 `useTasksDispatch` 这样的自定义 Hook。
+> - 你可以在你的应用程序中大量使用 context 和 reducer 的组合。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
