@@ -685,43 +685,323 @@
 >
 > **10、React将在Effect下次运行之前和卸载期间调用您的清理函数。**
 
-四、
+## 四、通过自定义钩子重用逻辑
 
+> ### 你将会学习到
+>
+> - 什么是自定义 Hooks，以及如何编写自己的 Hooks
+> - 如何重用组件之间的逻辑
+> - 如何命名和构造您的自定义 Hook
+> - 何时以及为何提取自定义 Hooks
 
+### 1、自定义hooks：在组件之间共享逻辑
 
+> 当两个组件的代码逻辑相同且需要订阅浏览器事件或featch数据时可以把相同逻辑整合到一个hooks中
+>
+> ```js
+>   // StatusBar组件
+>   const [isOnline, setIsOnline] = useState(true);
+>   useEffect(() => {
+>     function handleOnline() {
+>       setIsOnline(true);
+>     }
+>     function handleOffline() {
+>       setIsOnline(false);
+>     }
+>     window.addEventListener('online', handleOnline);
+>     window.addEventListener('offline', handleOffline);
+>     return () => {
+>       window.removeEventListener('online', handleOnline);
+>       window.removeEventListener('offline', handleOffline);
+>     };
+>   }, []);
+> 
+>   return <h1>{isOnline ? '✅ Online' : '❌ Disconnected'}</h1>;
+>   
+>   // SaveButton
+>   const [isOnline, setIsOnline] = useState(true);
+>   useEffect(() => {
+>     function handleOnline() {
+>       setIsOnline(true);
+>     }
+>     function handleOffline() {
+>       setIsOnline(false);
+>     }
+>     window.addEventListener('online', handleOnline);
+>     window.addEventListener('offline', handleOffline);
+>     return () => {
+>       window.removeEventListener('online', handleOnline);
+>       window.removeEventListener('offline', handleOffline);
+>     };
+>   }, []);
+> 
+>   function handleSaveClick() {
+>     console.log('✅ Progress saved');
+>   }
+> 
+>   return (
+>     <button disabled={!isOnline} onClick={handleSaveClick}>
+>       {isOnline ? 'Save progress' : 'Reconnecting...'}
+>     </button>
+>   );
+>  
+>   // 相同逻辑整合成一个hooks
+>     function useOnlineStatus() {
+>       const [isOnline, setIsOnline] = useState(true);
+>       useEffect(() => {
+>         function handleOnline() {
+>           setIsOnline(true);
+>         }
+>         function handleOffline() {
+>           setIsOnline(false);
+>         }
+>         window.addEventListener('online', handleOnline);
+>         window.addEventListener('offline', handleOffline);
+>         return () => {
+>           window.removeEventListener('online', handleOnline);
+>           window.removeEventListener('offline', handleOffline);
+>         };
+>       }, []);
+>       return isOnline;
+>     }
+> ```
+>
+> 
 
+### 2、hooks命名以use开头
 
+> React应用程序是由组件构建的。组件是由Hooks构建的，无论是内置的还是自定义的。您可能经常使用别人创建的自定义Hooks，但偶尔您也可能自己编写一个! 
+>
+> #### hooks命名规则
+>
+> > 1. **React 组件名称必须以大写字母开头，**例如`StatusBar`and `SaveButton`。React 组件还需要返回一些 React 知道如何显示的东西，比如一段 JSX。
+> >
+> > 2. 钩子名必须以use开头，后面跟着一个大写字母，比如[`useState`](https://zh-hans.react.dev/reference/react/useState) (内置)或useOnlineStatus(自定义，就像前面的页面一样)。钩子可以返回任意值。
+> >
+> > 3. 自定义hooks中至少调用一个hooks。 
+> >
+> >     
+> >
+> > 注意：
+> >
+> > > 如果您的 linter 是[为 React 配置的，](https://zh-hans.react.dev/learn/editor-setup#linting)它将强制执行此命名约定。向上滚动到上方的沙箱并将其重命名`useOnlineStatus`为`getOnlineStatus`. 请注意，linter 将不再允许您在其中调用`useState`或调用。`useEffect`只有 Hooks 和组件才能调用其他 Hooks！ 
 
+### 3、自定义hooks允许您共享有状态逻辑，而不是状态本身 
 
+> **自定义挂钩让您共享有状态逻辑，但不能共享状态本身。对 Hook 的每次调用都完全独立于对同一 Hook 的所有其他调用。** 
+>
+> ````js
+> export function useFormInput(initialValue) {
+>   const [value, setValue] = useState(initialValue);
+> 
+>   function handleChange(e) {
+>     setValue(e.target.value);
+>   }
+> 
+>   const inputProps = {
+>     value: value,
+>     onChange: handleChange
+>   };
+> 
+>   return inputProps;
+> }
+> 
+> export default function Form() {
+>   const firstNameProps = useFormInput('Mary');
+>   const lastNameProps = useFormInput('Poppins');
+>    return (
+>     <>
+>       <label>
+>         First name:
+>         <input {...firstNameProps} />
+>       </label>
+>       <label>
+>         Last name:
+>         <input {...lastNameProps} />
+>       </label>
+>       <p><b>Good morning, {firstNameProps.value} {lastNameProps.value}.</b></p>
+>     </>
+>  }
+> ````
+>
+> 上面的两个的状态虽然是同一个hook中执行的，但是react会将其分离，自定义hook只共享有状态的逻辑，不共享状态。 所以firstNameProps和lastNameProps编辑时是互不影响的。
 
+### 4、在Hook之间传递响应值
 
+>  自定义 Hooks 中的代码将在每次重新渲染组件时重新运行。这就是为什么像组件一样，自定义 Hooks[需要是纯的。](https://zh-hans.react.dev/learn/keeping-components-pure)将自定义 Hooks 代码视为组件主体的一部分！ 
+>
+> ````js
+> export default function ChatRoom({ roomId }) {
+>   const [serverUrl , setServerUrl] = useState('https://localhost:1234');
+> 
+>   useChatRoom({
+>     roomId: roomId,
+>     serverUrl: serverUrl  // serverUrl 内置hook的返回值传递给自定义hook
+>   });
+> ````
+>
+> 
 
+### 5、将事件处理程序传递给自定义hooks
 
+> 需要使用Effect Event(实验性) API
+>
+> https://zh-hans.react.dev/learn/reusing-logic-with-custom-hooks#passing-event-handlers-to-custom-hooks
 
+### 6、何时使用自定义Hooks
 
+> 每当您编写 Effect 时，请考虑将其包装在自定义 Hook 中是否会更清晰。[你不应该经常需要 Effects，](https://zh-hans.react.dev/learn/you-might-not-need-an-effect)所以如果你正在写一个，这意味着你需要“走出 React”以与一些外部系统同步或做一些 React 没有内置 API 的事情. 将其包装到自定义 Hook 中可以让您准确地传达您的意图以及数据如何流经它 
 
+### 7、自定义 Hooks 帮助您迁移到更好的模式
 
+> https://zh-hans.react.dev/learn/reusing-logic-with-custom-hooks#custom-hooks-help-you-migrate-to-better-patterns   了解(没看懂)
 
+### 8、总结
 
+> - 自定义挂钩让您可以在组件之间共享逻辑。
+> - 自定义挂钩的名称必须以`use`大写字母开头。
+> - Custom Hooks 只共享状态逻辑，而不是状态本身。
+> - 您可以将反应值从一个 Hook 传递到另一个 Hook，并且它们会保持最新。
+> - 每次您的组件重新渲染时，所有 Hooks 都会重新运行。
+> - 你的自定义 Hooks 的代码应该是纯净的，就像你的组件的代码一样。
+> - 将自定义 Hook 接收到的事件处理程序包装到 Effect Events 中。
+> - 不要创建像`useMount`. 保持他们的目的明确。
+> - 如何以及在何处选择代码边界取决于您。
 
+## 五、useCallback
 
+> useCallback是一个React Hook，它可以让你在重新渲染之间缓存函数定义。 
+>
+> ````js
+> const cachedFn = useCallback(fn, dependencies)
+> ````
+>
+> - 参考
+>   - [`useCallback(fn, dependencies)`](https://zh-hans.react.dev/reference/react/useCallback#usecallback)
+> - 用法
+>   - [跳过组件的重新渲染](https://zh-hans.react.dev/reference/react/useCallback#skipping-re-rendering-of-components)
+>   - [从记忆回调更新状态](https://zh-hans.react.dev/reference/react/useCallback#updating-state-from-a-memoized-callback)
+>   - [防止 Effect 过于频繁地触发](https://zh-hans.react.dev/reference/react/useCallback#preventing-an-effect-from-firing-too-often)
+>   - [优化自定义 Hook](https://zh-hans.react.dev/reference/react/useCallback#optimizing-a-custom-hook)
+> - 故障排除
+>   - [每次我的组件渲染时，`useCallback`返回一个不同的函数](https://zh-hans.react.dev/reference/react/useCallback#every-time-my-component-renders-usecallback-returns-a-different-function)
+>   - [我需要`useCallback`循环调用每个列表项，但这是不允许的](https://zh-hans.react.dev/reference/react/useCallback#i-need-to-call-usememo-for-each-list-item-in-a-loop-but-its-not-allowed)
+>
+> #### 参数
+>
+> - `fn`：要缓存的函数值。它可以接受任何参数并返回任何值。React 将在初始渲染期间返回（而不是调用！）你的函数。`dependencies`在下一次渲染中，如果自上次渲染以来没有改变，React 将再次为您提供相同的功能。否则，它将为您提供您在当前渲染期间传递的功能，并将其存储起来以备日后重用。React 不会调用你的函数。该函数返回给您，因此您可以决定何时以及是否调用它。
+> - `dependencies`：代码中引用的所有响应值的列表`fn`。响应式值包括 props、state 以及直接在组件主体内声明的所有变量和函数。如果你的 linter 是[为 React 配置的](https://zh-hans.react.dev/learn/editor-setup#linting)，它将验证每个响应值是否正确指定为依赖项。依赖项列表必须具有恒定数量的项目，并且像`[dep1, dep2, dep3]`. React 将使用比较算法将每个依赖项与其先前的值进行比较[`Object.is`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is)。
+>
+> #### 返回值
+>
+> 在初始渲染中，`useCallback`返回`fn`您传递的函数。
+>
+> 在随后的渲染中，它将返回上次渲染中已经存储的fn函数(如果依赖关系没有改变)，或者返回您在此渲染期间传递的fn函数。 
+>
+> #### 注意事项
+>
+> - `useCallback`是一个Hook，所以你只能**在你的组件顶层**或者你自己的Hooks中调用它。您不能在循环或条件内调用它。如果需要，提取一个新组件并将状态移入其中。
+> - **除非有特定原因，否则**React不会丢弃缓存的函数。
+>
+> ## 用法
+>
+> > https://zh-hans.react.dev/reference/react/useCallback#usage
 
+## 六、useDeferredValue
 
+> - 参考
+>   - [`useDeferredValue(value)`](https://zh-hans.react.dev/reference/react/useDeferredValue#usedeferredvalue)
+> - 用法
+>   - [在加载新内容时显示过时内容](https://zh-hans.react.dev/reference/react/useDeferredValue#showing-stale-content-while-fresh-content-is-loading)
+>   - [表明内容已过时](https://zh-hans.react.dev/reference/react/useDeferredValue#indicating-that-the-content-is-stale)
+>   - [延迟部分 UI 的重新渲染](https://zh-hans.react.dev/reference/react/useDeferredValue#deferring-re-rendering-for-a-part-of-the-ui)
+>
+>  参考
+>
+> ### `useDeferredValue(value)` 
+>
+> `useDeferredValue`在组件的顶层调用以获取该值的延迟版本。
+>
+> ````js
+> import { useState, useDeferredValue } from 'react';
+> 
+> function SearchPage() {
+>   const [query, setQuery] = useState('');
+>   const deferredQuery = useDeferredValue(query); // 使用延迟值
+>   // ...
+> }
+> ````
+>
+> #### 参数
+>
+> - `value`：您要延迟的值。它可以有任何类型。
+>
+> #### 返回值
+>
+> 在初始渲染期间，返回的延迟值将与您提供的值相同。在更新期间，React 将首先尝试使用旧值重新渲染（因此它将返回旧值），然后尝试在后台使用新值重新渲染（因此它将返回更新后的值）。（可用console 验证，表现和说明一致）
+>
+> ### 注意
+>
+> > 
 
+### 1、在底层，延迟值是如何工作的? 
 
+> 你可以把它想象成两个步骤: 
+>
+> > 1、首先，React使用新查询(“ab”)重新渲染，但使用旧的deferredQuery(仍然是“a”)。传递给结果列表的deferredQuery值被延迟:它“滞后于”查询值。 
+> >
+> > 2、在后台，React尝试将query和deferredQuery都更新为“ab”来重新渲染。如果这个重新渲染完成，React将在屏幕上显示它。但是，如果它挂起(“ab”的结果尚未加载)，React将放弃此渲染尝试，并在数据加载后再次重试此重新渲染。用户将一直看到过期的延迟值，直到数据准备好。 
+>
+> 延迟的“后台”呈现是可中断的。例如，如果您再次输入输入，React将放弃它并使用新值重新启动。React将始终使用最新提供的值。 
+>
+> 注意，每次击键仍然有一个网络请求。这里延迟的是显示结果(直到它们准备好)，而不是网络请求本身。即使用户继续输入，每次击键的响应也会被缓存，因此按Backspace是即时的，不会再次获取。
 
+### 2、延迟部分 UI 的重新渲染
 
-
-
-
-
-
-
-
-
-
-
-
+> 您也可以申请`useDeferredValue`作为性能优化。当你的 UI 的一部分重新呈现很慢，没有简单的方法来优化它，并且你想防止它阻塞 UI 的其余部分时，它很有用。 在某种情况下 `useDeferredValue`与memo配合使用体验是非常好的
+>
+> > 例子： https://zh-hans.react.dev/reference/react/useDeferredValue#examples
+>
+> > 假设您有一个文本字段和一个组件（如图表或长列表），它们在每次击键时重新呈现： 
+> >
+> > ````
+> > function App() {
+> >   const [text, setText] = useState('');
+> >   return (
+> >     <>
+> >       <input value={text} onChange={e => setText(e.target.value)} />
+> >       <SlowList text={text} />
+> >     </>
+> >   );
+> > }
+> > ````
+> >
+> > 首先，优化`SlowList`以在其道具相同时跳过重新渲染。为此，[将其包装在`memo`：](https://zh-hans.react.dev/reference/react/memo#skipping-re-rendering-when-props-are-unchanged) 
+> >
+> > > const SlowList = memo(function SlowList({ text }) {
+> > >
+> > >   // ...
+> > >
+> > > });
+> >
+> > 然而，这只有在SlowList道具与之前的渲染相同的情况下才有帮助。你现在面临的问题是，当它们不同时，当你需要显示不同的视觉输出时，它会很慢。 
+> >
+> > 具体地说，主要的性能问题是每当您在输入中输入时，SlowList都会接收到新的道具，并且重新呈现它的整个树会使键入感觉很混乱。在这种情况下，**useDeferredValue允许你优先更新输入(必须快)而不是更新结果列表(允许慢一些):** 
+> >
+> > ````
+> > function App() {
+> >   const [text, setText] = useState('');
+> >   const deferredText = useDeferredValue(text);
+> >   return (
+> >     <>
+> >       <input value={text} onChange={e => setText(e.target.value)} />
+> >       <SlowList text={deferredText} />
+> >     </>
+> >   );
+> > }
+> > ````
+> >
+> > 这并不能使SlowList的重新呈现更快。然而，它告诉React，重新渲染列表可以被取消优先级，这样它就不会阻塞击键。列表将“落后于”输入，然后“迎头赶上”。与之前一样，React将尝试尽快更新列表，但不会阻止用户输入。 
 
 
 

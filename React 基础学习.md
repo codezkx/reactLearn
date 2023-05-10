@@ -3253,19 +3253,30 @@ const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
 >   return <div />;
 > }
 > ```
->
-> > ### **陷阱**
-> >
+
+#### **陷阱**（无限循环）
+
 > > 默认情况下，**效果在每次渲染后运行**。这就是为什么这样的代码会产生一个无限循环: 
 > >
-> > ```
+> > ```js
 > > const [count, setCount] = useState(0);
 > > useEffect(() => {
 > >   setCount(count + 1);
-> > });
+> > }); // 这个的依赖项是count 所以count会一直更新下去
+> > // 另一种情况
+> > 
+> >   const [firstName, setFirstName] = useState('Taylor');
+> >   const [lastName, setLastName] = useState('Swift');
+> >   const [fullName, setFullName] = useState('');
+> >   useEffect(() => {
+> >     console.log(fullName) // 打印不算逻辑代码，react会直接过滤掉console里面引用的state
+> >     setFullName(firstName + ' ' + lastName);
+> >   }) // useEffect收集的依赖只有 firstName 和 lastName 所以这里不会产生无限渲染
 > > ```
 > >
 > > 默认情况下，效果在每次渲染后运行。这就是为什么这样的代码会产生一个无限循环:效果作为渲染的结果运行。设置状态触发呈现。在Effect中立即设置状态就像给自己插上电源插座一样。Effect运行，它设置状态，状态导致重新呈现，状态导致Effect运行，它再次设置状态，这导致另一次重新呈现，以此类推。 
+>
+> 
 
 #### 第二步： 指定Effect依赖项
 
@@ -3273,7 +3284,9 @@ const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
 >
 > > 1、有时候，它很慢。与外部系统同步并不总是即时的，所以除非必要，否则您可能希望跳过此操作。例如，您不希望每次击键时都重新连接到聊天服务器。 
 > >
-> > 2、有时候，这是错误的。例如，您不希望在每次击键时触发组件渐入动画。动画应该只在组件第一次出现时播放一次。 
+> > 2、有时候，这是错误的。例如，您不希望在每次击键时触发组件渐入动画。动画应该只在组件第一次出现时播放一次。
+> >
+> > > **组件中的所有值(包括props、state和组件主体中的变量)都是响应式的。任何响应值都可以在重新渲染时改变，所以这些响应值都可以作为Effect的依赖项。** 
 >
 > *您可以通过将依赖项*数组指定为调用的第二个参数来告诉 React**跳过不必要的重新运行 Effect**。
 >
@@ -3556,75 +3569,362 @@ const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
 
 #### 1、基于state或props更新state
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+> **当某些东西可以从现有的props或state中计算出来时，不要把它放在state中。相反，在渲染期间计算它。**这使您的代码更快（您避免了额外的“级联”更新）、更简单（您删除了一些代码）并且更不容易出错（您避免了由于不同状态变量彼此不同步而导致的错误）。 
+>
+> ````js
+> export default function UpdateText() {
+>   const [firstName, setFirstName] = useState('Taylor');
+>   const [lastName, setLastName] = useState('Swift');
+>   // const [fullName, setFullName] = useState('');  // 冗余状态
+>   // 这种写法是冗余的，且效率低下。
+>   // useEffect(() => {
+>   //   setFullName(firstName + ' ' + lastName);
+>   // }) // useEffect收集的依赖只有 firstName 和 lastName 所以这个不会产生无限渲染
+> 
+>   // 正确写法是
+>   const fullName = firstName + ' ' + lastName
+> 
+>   return (
+>     <>
+>       <h1>{fullName}</h1>
+>     </>
+>   )
+> }
+> ````
+>
+> 
+
+#### 2、缓存昂贵的计算
+
+> 将昂贵的计算包装在Hook 中来缓存（或[“记忆”](https://en.wikipedia.org/wiki/Memoization)[`useMemo`](https://zh-hans.react.dev/reference/react/useMemo) ） ： 
+>
+> ````js
+> import { useMemo, useState } from 'react';
+> 
+> function TodoList({ todos, filter }) {
+>   const [newTodo, setNewTodo] = useState('');
+>   // ✅ Does not re-run getFilteredTodos() unless todos or filter change
+>   const visibleTodos = useMemo(() => getFilteredTodos(todos, filter), [todos, filter]);
+>   // ...
+> }
+> ````
+>
+> **这告诉 React 你不希望内部函数重新运行，除非todosorfilter已经改变。**`getFilteredTodos()`React 会记住初始渲染期间的返回值。在下一次渲染期间，它将检查`todos`或 是否`filter`不同。如果它们与上次相同，`useMemo`将返回它存储的最后一个结果。但如果它们不同，React 将再次调用内部函数（并存储其结果）。 
+>
+> 您包装的函数[`useMemo`](https://zh-hans.react.dev/reference/react/useMemo)在渲染期间运行，因此这仅适用于[纯计算。](https://zh-hans.react.dev/learn/keeping-components-pure) 
+
+#### 3、当props改变时重置所有state
+
+>  
+>
+> ````js
+> export default function ProfilePage({ userId }) {
+>   return (
+>     <Profile
+>       userId={userId}
+>       key={userId} // userId不变时状态将保存，userId变化时DOM将重新渲染（key）
+>     />
+>   );
+> }
+> 
+> function Profile({ userId }) {
+>   // ✅ This and any other state below will reset on key change automatically
+>   const [comment, setComment] = useState('');
+>   // ...
+> }
+> ````
+>
+> 通常，当相同的组件在相同的位置呈现时，React会保留状态。通过将userId作为键传递给Profile组件，您要求React将具有不同userId的两个Profile组件视为不应该共享任何状态的两个不同组件。每当键(您已经将其设置为userId)更改时，React将重新创建DOM并重置Profile组件及其所有子组件的状态。现在，当在配置文件之间导航时，评论字段将自动清除。 
+
+#### 4、当道具改变时调整一些状态
+
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+>
+> 一般使用的方式是复制一份相当于用上一次的数据和当前的数据进行比较，但**尽管此模式比 Effect 更有效，但大多数组件也不需要它。**不管你怎么做，基于 props 或其他状态调整状态都会使你的数据流更难理解和调试。始终检查您是否可以[使用键重置所有状态](https://zh-hans.react.dev/learn/you-might-not-need-an-effect#resetting-all-state-when-a-prop-changes)或[在渲染期间计算所有内容](https://zh-hans.react.dev/learn/you-might-not-need-an-effect#updating-state-based-on-props-or-state)。 
+
+#### 5、在事件处理程序之间共享逻辑
+
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#sharing-logic-between-event-handlers 了解即可一般不会这么做
+
+#### 6、发送post请求
+
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#sending-a-post-request了解即可一般不会这么做
+
+#### 7、计算链
+
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#chains-of-computations 了解即可
+
+#### 8、初始化应用程序
+
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#initializing-the-application 了解即可
+
+#### 9、通知父组件状态变化
+
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#notifying-parent-components-about-state-changes 一般使用状态提升
+
+#### 10、将数据传递给父级
+
+>https://zh-hans.react.dev/learn/you-might-not-need-an-effect#passing-data-to-the-parent了解即可
+
+#### 11、订阅外部商店
+
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#subscribing-to-an-external-store 了解即可
+
+#### 12、获取数据
+
+> ````js
+> import {useState, useEffect} from 'react';
+> export default function GetData() {
+>   const [results, setResults] = useState([]);
+>   const [page, setPage] = useState(1);
+>   useEffect(() => {
+>     let ignore = false;
+>     console.log(1)
+>     setTimeout(() => {
+>       console.log(ignore)
+>       if (!ignore) { // 连续点击按钮ignore始终都是true
+>         // console.log(page);
+>         setResults([...results, page + 1])
+>       }
+>     }, 1000)
+>     return () => {
+>       ignore = true;
+>     console.log(3)
+> 
+>     }
+>   }, [page])
+> 
+>   return (
+>     <>
+>       <button onClick={() => setPage(page + 1)}>Next Page</button>
+>     </>
+>   )
+> }
+> ````
+>
+> https://zh-hans.react.dev/learn/you-might-not-need-an-effect#fetching-data  理解并掌握
+
+### 2、总结
+
+> 1、如果你能在渲染过程中计算一些东西，你就不需要特效了。 
+>
+> 2、要缓存昂贵的计算，请添加useMemo而不是useEffect。 
+>
+> 3、要重置整个组件树的状态，可以向它传递一个不同的键。 
+>
+> 4、要在响应道具更改时重置特定的状态位，请在渲染期间设置它。 
+>
+> 5、因为显示组件而运行的代码应该在Effects中，其余的应该在事件中。 
+>
+> 6、如果需要更新多个组件的状态，最好在单个事件期间进行更新。 
+>
+> 7、每当您尝试同步不同组件中的状态变量时，请考虑提升状态。 
+>
+> 8、您可以使用Effects获取数据，但是您需要实现清理以避免竞争条件。
+>
+> 
+
+## 十二、反应Effects的生命周期
+
+> Effect 与组件有不同的生命周期。组件可以挂载、更新或卸载。Effect 只能做两件事：开始同步某些东西，然后停止同步它。如果你的 Effect 依赖于随时间变化的道具和状态，这个循环可能会发生多次。React 提供了一个 linter 规则来检查您是否正确指定了 Effect 的依赖项。这使您的 Effect 与最新的道具和状态保持同步 
+>
+> > ### 你将会学习到
+> >
+> > - Effect 的生命周期与组件的生命周期有何不同
+> > - 如何孤立地考虑每个单独的 Effect
+> > - 您的 Effect 何时需要重新同步，以及为什么
+> > - 如何确定 Effect 的依赖项
+> > - 值是反应性的意味着什么
+> > - 空的依赖数组意味着什么
+> > - React 如何使用 linter 验证您的依赖关系是否正确
+> > - 当你不同意 linter 时该怎么办
+
+### 1、Effect的生命周期
+
+> 每个 React 组件都经历相同的生命周期：
+>
+> - 当一个组件被添加到屏幕上时它*就会被挂载。*
+> - 组件在接收到新的道具或状态时*更新*，通常是为了响应交互。
+> - 当组件从屏幕上移除时，组件*将卸载。*
+
+### 2、组件主体中声明的所有变量都是响应式的
+
+> 组件中的所有值(包括props、state和组件主体中的变量)都是响应式的。任何响应值都可以在重新渲染时改变，所以你需要将响应值作为Effect的依赖项。 
+
+### 3、全局或可变值可以是依赖项吗？
+
+> **可变值（包括全局变量）不是反应性的。**
+>
+> **像这样的可变值location.pathname不能是依赖项。**它是可变的，因此它可以完全在 React 渲染数据流之外随时更改。更改它不会触发组件的重新渲染。因此，即使您在依赖项中指定它，React 也*不会知道*在 Effect 发生变化时重新同步它。这也打破了 React 的规则，因为在渲染期间读取可变数据（也就是计算依赖项时）会破坏[渲染的纯度。](https://zh-hans.react.dev/learn/keeping-components-pure)相反，您应该使用[`useSyncExternalStore`.](https://zh-hans.react.dev/learn/you-might-not-need-an-effect#subscribing-to-an-external-store)
+>
+> **像可变值ref.current或您从中读取的内容也不能成为依赖项。**自身返回的 ref 对象`useRef`可以是一个依赖项，但它的`current`属性是有意可变的。它使您可以[在不触发重新渲染的情况下跟踪某些内容。](https://zh-hans.react.dev/learn/referencing-values-with-refs)但是因为更改它不会触发重新渲染，所以它不是一个反应值，并且 React 不会知道在更改时重新运行您的 Effect。
+>
+> 正如您将在本页下方了解到的，linter 将自动检查这些问题。
+
+### 4、不想重新同步时怎么办
+
+> **Effect是反应性代码块。**当您在其中读取的值发生变化时，它们会重新同步。与每次交互只运行一次的事件处理程序不同，Effects 在需要同步时运行。
+>
+> **您不能“选择”您的依赖项。**您的依赖项必须包括您在 Effect 中读取的每个[反应值。](https://zh-hans.react.dev/learn/lifecycle-of-reactive-effects#all-variables-declared-in-the-component-body-are-reactive)linter 强制执行此操作。有时这可能会导致无限循环等问题，并导致您的 Effect 过于频繁地重新同步。不要通过抑制 linter 来解决这些问题！以下是尝试的方法：
+>
+> - **检查您的 Effect 是否代表一个独立的同步过程。**如果您的 Effect 不同步任何内容，[则可能没有必要。](https://zh-hans.react.dev/learn/you-might-not-need-an-effect)如果它同步几个独立的东西，[把它分开。](https://zh-hans.react.dev/learn/lifecycle-of-reactive-effects#each-effect-represents-a-separate-synchronization-process)
+> - **如果你想读取道具或状态的最新值而不对其做出“反应”并重新同步Effect，**你可以将你的效果分成一个反应部分（你将保留在Effect中）和一个非反应部分（您将提取到称为*Effect Event*的东西中）。[阅读有关将事件与效果分开的信息。](https://zh-hans.react.dev/learn/separating-events-from-effects)
+> - **避免依赖对象和函数作为依赖项。**如果您在渲染期间创建对象和函数，然后从 Effect 中读取它们，则它们在每次渲染时都会不同。这将导致您的Effect每次都重新同步。[阅读有关从 Effects 中删除不必要的依赖项的更多信息。](https://zh-hans.react.dev/learn/removing-effect-dependencies)
+
+### 5、总结
+
+> - 组件可以挂载、更新和卸载。
+> - 每个 Effect 都有一个独立于周围组件的生命周期。
+> - 每个 Effect 都描述了一个可以*启动*和*停止的*单独同步过程。
+> - 当您编写和阅读 Effects 时，请从每个单独的 Effect 的角度（如何开始和停止同步）而不是从组件的角度（它如何安装、更新或卸载）思考。
+> - 在组件体内声明的值是“反应性的”。
+> - 反应值应该重新同步效果，因为它们会随时间变化。
+> - linter 验证 Effect 中使用的所有反应值是否都指定为依赖项。
+> - linter 标记的所有错误都是合法的。总有一种方法可以修复代码以不违反规则。
+
+## 十三、将事件与效果分开
+
+> 事件处理程序仅在您再次执行相同的交互时重新运行。与事件处理程序不同，如果 Effects 读取的某些值（如 prop 或状态变量）与上次渲染期间的值不同，则 Effects 会重新同步。有时，您还需要两种行为的混合：一个 Effect 重新运行以响应某些值而不是其他值。  
+>
+> > **你将会学习到**
+> >
+> > - 如何在事件处理程序和 Effect 之间进行选择
+> > - 为什么Effect 是响应性的，而事件处理程序不是
+> > - 当您希望 Effect 的部分代码不响应时该怎么做
+> > - 什么是Effect Events ，以及如何从您的Effect 中提取它们
+> > - 如何使用 Effect Events 从 Effects 中读取最新的道具和状态
+
+### 1、响应值和响应逻辑
+
+> 在组件体内声明的道具、状态和变量称为反应值。在这个例子中，`serverUrl`不是反应值，而是`roomId`和`message`是。它们参与渲染数据流： 
+>
+> ````js
+> const serverUrl = 'https://localhost:1234';
+> 
+> function ChatRoom({ roomId }) {
+>   const [message, setMessage] = useState('');
+>   // ...
+> }
+> ````
+>
+> - **事件处理程序中的逻辑不是响应性的。**它不会再次运行，除非用户再次执行相同的交互（例如单击）。事件处理程序可以读取响应值而无需对其更改做出“响应”。
+> - **Effects 内部的逻辑是响应式的。**如果您的 Effect 读取一个响应值，[您必须将其指定为依赖项。](https://zh-hans.react.dev/learn/lifecycle-of-reactive-effects#effects-react-to-reactive-values)然后，如果重新渲染导致该值发生变化，React 将使用新值重新运行 Effect 的逻辑。
+
+### 2、事件处理程序内部的逻辑不是响应式的
+
+> 从用户的角度来看，**对消息 的更改并不意味着他们要发送消息。**它仅表示用户正在键入。换句话说，发送消息的逻辑不应该是反应性的。它不应该仅仅因为无功值已经改变而再次运行。这就是它属于事件处理程序的原因： 
+>
+> ````js
+>   function handleSendClick() {
+>     sendMessage(message);
+>   }
+> ````
+>
+> 
+
+### 3、Effects 内部的逻辑是反应式的
+
+> ````js
+>  const connection = createConnection(serverUrl, roomId);
+>  connection.connect();
+> ````
+
+> 从用户的角度来看，**对 的更改确实roomId 意味着他们想要连接到不同的房间。**换句话说，连接到房间的逻辑应该是反应性的。您*希望*这些代码行“跟上”反应值，并在该值不同时再次运行。这就是它属于 Effect 的原因： 
+>
+> ````js
+>   useEffect(() => {
+>     const connection = createConnection(serverUrl, roomId);
+>     connection.connect();
+>     return () => {
+>       connection.disconnect()
+>     };
+>   }, [roomId]);
+> ````
+>
+> 
+
+### 4、声明一个效果事件（实验性API）
+
+>https://zh-hans.react.dev/learn/separating-events-from-effects#declaring-an-effect-event
+
+## 十四、移除effect依赖
+
+> 当您编写 Effect 时，linter 将验证您是否已将 Effect 读取的每个反应值（如 props 和 state）包含在 Effect 的依赖项列表中。这确保您的 Effect 与组件的最新道具和状态保持同步。不必要的依赖项可能会导致您的 Effect 运行过于频繁，甚至会造成无限循环。按照本指南检查并从您的效果中删除不必要的依赖项 
+>
+> > ### 你将会学习到
+> >
+> > - 如何修复无限效果依赖循环
+> > - 当你想删除依赖项时该怎么做
+> > - 如何从 Effect 中读取值而不对其做出“反应”
+> > - 如何以及为什么要避免对象和函数依赖
+> > - 为什么抑制依赖 linter 是危险的，应该怎么做
+
+### 1、依赖项应与代码匹配
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#dependencies-should-match-the-code
+
+###  2、要删除依赖项，请证明它不是依赖项
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#to-remove-a-dependency-prove-that-its-not-a-dependency
+
+### 3、要更改依赖项，请更改代码
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#to-change-the-dependencies-change-the-code
+
+### 4、为什么抑制依赖 linter 如此危险？
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#why-is-suppressing-the-dependency-linter-so-dangerous
+
+### 5、要更改依赖项，请更改代码
+
+> 您可能已经注意到工作流程中的一种模式：
+>
+> 1. 首先，您**更改 Effect 的代码**或声明反应值的方式。
+> 2. 然后，您按照 linter 并调整依赖项以**匹配您更改的代码。**
+> 3. 如果您对依赖项列表不满意，请**返回第一步**（并再次更改代码）。
+>
+> 最后一部分很重要。**如果要更改依赖项，请先更改周围的代码。**您可以将依赖项列表视为[您的 Effect 代码使用的所有反应值的列表。](https://zh-hans.react.dev/learn/lifecycle-of-reactive-effects#react-verifies-that-you-specified-every-reactive-value-as-a-dependency)您不能*选择*将什么放在该列表中。该列表*描述了*您的代码。要更改依赖项列表，请更改代码。 
+
+### 6、此代码是否应移至事件处理程序
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#should-this-code-move-to-an-event-handler
+
+### 7、您的 Effect 是否在做几件不相关的事情？
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#is-your-effect-doing-several-unrelated-things
+
+### 8、你在读一些状态来计算下一个状态吗？
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#are-you-reading-some-state-to-calculate-the-next-state
+
+### 9、你想读取一个值而不对其变化做出“反应”吗？
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#do-you-want-to-read-a-value-without-reacting-to-its-changes
+
+### 10、从道具包装事件处理程序
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#wrapping-an-event-handler-from-the-props
+
+### 11、分离反应性和非反应性代码
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#separating-reactive-and-non-reactive-code
+
+### 12、一些无功值是否会无意中改变？
+
+> https://zh-hans.react.dev/learn/removing-effect-dependencies#do-you-want-to-read-a-value-without-reacting-to-its-changes
+
+### 13、总结
+
+> - 依赖项应始终与代码匹配。
+> - 当您对依赖项不满意时，您需要编辑的是代码。
+> - 抑制 linter 会导致非常混乱的错误，您应该始终避免它。
+> - 要删除依赖项，您需要向 linter“证明”它不是必需的。
+> - 如果某些代码应该运行以响应特定的交互，请将该代码移至事件处理程序。
+> - 如果您的 Effect 的不同部分因不同原因需要重新运行，请将其拆分为多个 Effect。
+> - 如果你想根据以前的状态更新一些状态，传递一个更新函数。
+> - 如果您想读取最新值而不对其进行“反应”，请从您的效果中提取一个效果事件。
+> - 在 JavaScript 中，如果对象和函数是在不同时间创建的，则它们被认为是不同的。
+> - 尽量避免对象和函数依赖。将它们移到组件外或 Effect 内。
 
 
 
