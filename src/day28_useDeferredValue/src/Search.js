@@ -13,7 +13,7 @@ export default function Search() {
         Search Albums
         <input
           type="text"
-          value={query} 
+          value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
