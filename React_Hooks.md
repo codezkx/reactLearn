@@ -927,7 +927,7 @@
 > 
 > function SearchPage() {
 >   const [query, setQuery] = useState('');
->   const deferredQuery = useDeferredValue(query); // 使用延迟值
+>   const deferredQuery = useDeferredValue(query); // 使用延迟值  只有query改变时useDeferredValue才会重新执行
 >   // ...
 > }
 > ````
@@ -1053,7 +1053,7 @@
 
 > 如果你在单个页面上渲染多个独立的 React 应用程序，请在 [`createRoot`](https://zh-hans.react.dev/reference/react-dom/client/createRoot#parameters) 或 [`hydrateRoot`](https://zh-hans.react.dev/reference/react-dom/client/hydrateRoot) 调用中将 `identifierPrefix` 作为选项传递。这确保了由两个不同应用程序生成的 ID 永远不会冲突，因为使用 `useId` 生成的每个 ID 都将以你指定的不同前缀开头。  
 
-### 八、useImperativeHandle
+## 八、useImperativeHandle
 
 > `useImperativeHandle` 是 React 中的一个 Hook，它能让你自定义由 [ref](https://zh-hans.react.dev/learn/manipulating-the-dom-with-refs) 暴露出来的句柄。 
 >
@@ -1145,39 +1145,584 @@
 > >
 > > **如果可以通过 prop 实现，那就不应该使用 ref**。例如，你不应该从一个 `Model` 组件暴露出 `{open, close}` 这样的命令式句柄，最好是像 `<Modal isOpen={isOpen} />` 这样，将 `isOpen` 作为一个 prop。[副作用](https://zh-hans.react.dev/learn/synchronizing-with-effects) 可以帮你通过 prop 来暴露一些命令式的行为。
 
+## 九、useInsertion
+
+> **useInsertionEffect是为CSS-in-JS库作者准备的。除非你正在使用CSS-in-JS库，并且需要一个地方来注入样式，否则你可能会想要useEffect或uselayouteeffect。** 
+>
+> - 参考
+>   - [`useInsertionEffect(setup, dependencies?)`](https://zh-hans.react.dev/reference/react/useInsertionEffect#useinsertioneffect)
+> - 用法
+>   - [从 CSS-in-JS 库注入动态样式](https://zh-hans.react.dev/reference/react/useInsertionEffect#injecting-dynamic-styles-from-css-in-js-libraries)
+>
+> ## 语法
+>
+> ### `useInsertionEffect(setup, dependencies?)` 
+>
+> 调用`useInsertionEffect`以在任何 DOM 更改之前插入样式：
+>
+> ````js
+> import { useInsertionEffect } from 'react';
+> 
+> // Inside your CSS-in-JS library
+> function useCSS(rule) {
+>   useInsertionEffect(() => {
+>     // ... inject <style> tags here ...
+>   });
+>   return rule;
+> }
+> 
+> /**
+>  执行对比
+> 	useInsertionEffect > useLayoutEffect > useEffect
+> **/
+> ````
+>
+> #### 参数
+>
+> - `setup`：具有您的effect逻辑的功能。您的设置函数也可以选择返回一个*清理*函数。在你的组件被添加到 DOM 之前，React 将运行你的设置函数。在每次使用更改的依赖项重新渲染后，React 将首先使用旧值运行清理函数（如果你提供了它），然后使用新值运行你的设置函数。在您的组件从 DOM 中删除之前，React 将运行您的清理功能。
+> - **可选** `dependencies(Arrar)`：设置依赖项，依赖项发生变化时setup才会重新运行（初次渲染不管有没有依赖项都会运行），如果没有设置依赖项，则每次组件重新渲染时都会执行setup。
+>
+> ````js
+> // Inside your CSS-in-JS library
+> let isInserted = new Set();
+> function useCSS(rule) {
+>   useInsertionEffect(() => {
+>     // As explained earlier, we don't recommend runtime injection of <style> tags.
+>     // But if you have to do it, then it's important to do in useInsertionEffect.
+>     if (!isInserted.has(rule)) {
+>       isInserted.add(rule);
+>       document.head.appendChild(getStyleForRule(rule));
+>     }
+>   });
+>   return rule;
+> }
+> 
+> function Button() {
+>   const className = useCSS('...');
+>   return <div className={className} />;
+> }
+> ````
+>
+> 
+
+## 十、useLayoutEffect
+
+> **`useLayoutEffect`会损害性能。[`useEffect`](https://zh-hans.react.dev/reference/react/useEffect)尽可能选择。** 
+>
+> `useLayoutEffect`是[`useEffect`](https://zh-hans.react.dev/reference/react/useEffect)在浏览器重新绘制屏幕之前触发的一个hooks。 
+>
+> ````js
+> useLayoutEffect(setup, dependencies?)
+> /**
+>  执行对比
+> 	useInsertionEffect > useLayoutEffect > useEffect
+> **/
+> ````
+>
+> - 参考
+>   - [`useLayoutEffect(setup, dependencies?)`](https://zh-hans.react.dev/reference/react/useLayoutEffect#useinsertioneffect)
+> - 用法
+>   - [在浏览器重绘屏幕之前测量布局](https://zh-hans.react.dev/reference/react/useLayoutEffect#measuring-layout-before-the-browser-repaints-the-screen)
+> - 故障排除
+>   - [我收到一个错误：“`useLayoutEffect`在服务器上什么都不做”](https://zh-hans.react.dev/reference/react/useLayoutEffect#im-getting-an-error-uselayouteffect-does-nothing-on-the-server)
+>
+> ## 语法
+>
+> ### `useLayoutEffect(setup, dependencies?)` 
+>
+> `useLayoutEffect`在浏览器重新绘制屏幕之前调用执行布局测量：
+>
+> ````
+> import { useState, useRef, useLayoutEffect } from 'react';
+> 
+> function Tooltip() {
+>   const ref = useRef(null);
+>   const [tooltipHeight, setTooltipHeight] = useState(0);
+> 
+>   useLayoutEffect(() => {
+>     const { height } = ref.current.getBoundingClientRect();
+>     setTooltipHeight(height);
+>   }, []);
+> ````
+>
+> #### 参数
+>
+> - `setup`：具有您的effect逻辑的功能。您的设置函数也可以选择返回一个*清理*函数。在你的组件被添加到 DOM 之前，React 将运行你的设置函数。在每次使用更改的依赖项重新渲染后，React 将首先使用旧值运行清理函数（如果你提供了它），然后使用新值运行你的设置函数。在您的组件从 DOM 中删除之前，React 将运行您的清理功能。
+> - **可选** `dependencies(Arrar)`：设置依赖项，依赖项发生变化时setup才会重新运行（初次渲染不管有没有依赖项都会运行），如果没有设置依赖项，则每次组件重新渲染时都会执行setup。
+>
+> #### 返回值
+>
+> `useLayoutEffect`回报`undefined`。
+>
+> #### 注意事项
+>
+> - `useLayoutEffect`是一个Hook，所以你只能**在你的组件顶层**或者你自己的Hooks中调用它。您不能在循环或条件内调用它。如果需要，请提取一个组件并将Effect移到那里。
+> - 当严格模式打开时，React 将在第一次真正的设置之前**运行一个额外的开发专用设置+清理周期。**这是一个压力测试，可确保您的清理逻辑“镜像”您的设置逻辑，并确保它停止或撤消设置正在执行的任何操作。如果这导致问题，[请执行清理功能。](https://zh-hans.react.dev/learn/synchronizing-with-effects#how-to-handle-the-effect-firing-twice-in-development)
+> - **如果您的某些依赖项是在组件内部定义的对象或函数，则它们会导致 Effect 比需要更频繁地重新运行的**风险。要解决此问题，请删除不必要的[对象](https://zh-hans.react.dev/reference/react/useEffect#removing-unnecessary-object-dependencies)和[函数](https://zh-hans.react.dev/reference/react/useEffect#removing-unnecessary-function-dependencies)依赖项。您还可以在 Effect 之外[提取状态更新](https://zh-hans.react.dev/reference/react/useEffect#updating-state-based-on-previous-state-from-an-effect)和[非反应性逻辑。](https://zh-hans.react.dev/reference/react/useEffect#reading-the-latest-props-and-state-from-an-effect)
+> - 效果**仅在客户端上运行。**它们不会在服务器渲染期间运行。
+> - `useLayoutEffect`里面的代码和它安排的所有状态更新**都会阻止浏览器重新绘制屏幕。**如果过度使用，这会使您的应用变慢。如果可能，请使用[`useEffect`.](https://zh-hans.react.dev/reference/react/useEffect)
+
+## 十一、useMemo
+
+> `useMemo`是一个 React Hook，可让您在重新渲染时缓存计算结果。 
+>
+> ```js
+> const cachedValue = useMemo(calculateValue, dependencies)
+> ```
+>
+> - 参考
+>   - [`useMemo(calculateValue, dependencies)`](https://zh-hans.react.dev/reference/react/useMemo#usememo)
+> - 用法
+>   - [跳过昂贵的重新计算](https://zh-hans.react.dev/reference/react/useMemo#skipping-expensive-recalculations)
+>   - [跳过组件的重新渲染](https://zh-hans.react.dev/reference/react/useMemo#skipping-re-rendering-of-components)
+>   - [记忆另一个 Hook 的依赖](https://zh-hans.react.dev/reference/react/useMemo#memoizing-a-dependency-of-another-hook)
+>   - [记忆一个函数](https://zh-hans.react.dev/reference/react/useMemo#memoizing-a-function)
+> - 故障排除
+>   - [我的计算在每次重新渲染时运行两次](https://zh-hans.react.dev/reference/react/useMemo#my-calculation-runs-twice-on-every-re-render)
+>   - [我的`useMemo`调用应该返回一个对象，但返回未定义](https://zh-hans.react.dev/reference/react/useMemo#my-usememo-call-is-supposed-to-return-an-object-but-returns-undefined)
+>   - [每次我的组件渲染时，计算都会`useMemo`重新运行](https://zh-hans.react.dev/reference/react/useMemo#every-time-my-component-renders-the-calculation-in-usememo-re-runs)
+>   - [我需要`useMemo`循环调用每个列表项，但这是不允许的](https://zh-hans.react.dev/reference/react/useMemo#i-need-to-call-usememo-for-each-list-item-in-a-loop-but-its-not-allowed)
+>
+> ## 参考
+>
+> ### `useMemo(calculateValue, dependencies)` 
+>
+> `useMemo`在组件的顶层调用以在重新渲染时缓存计算：
+>
+> ````js
+> import { useMemo } from 'react';
+> 
+> function TodoList({ todos, tab }) {
+>   const visibleTodos = useMemo(
+>     () => filterTodos(todos, tab),
+>     [todos, tab]
+>   );
+>   // ...
+> }
+> ````
+>
+> #### 参数
+>
+> - `calculateValue`：计算要缓存的值的函数。它应该是纯粹的，不带任何参数，并且应该返回任何类型的值。React 将在初始渲染期间调用您的函数。`dependencies`在下一次渲染中，如果自上次渲染以来没有改变，React 将再次返回相同的值。否则，它会调用`calculateValue`，返回它的结果，并存储它以便以后可以重用。
+> - **可选** `dependencies(Arrar)`：设置依赖项，依赖项发生变化时setup才会重新运行（初次渲染不管有没有依赖项都会运行），如果没有设置依赖项，则每次组件重新渲染时都会执行setup。
+>
+> #### 返回值
+>
+> 在初始渲染时，返回不带参数`useMemo`调用的结果。`calculateValue`
+>
+> 在下一次渲染期间，它将返回上次渲染中已经存储的值(如果依赖关系没有改变)，或者再次调用calculateValue，并返回calculateValue已经返回的结果。 
+>
+> #### 注意事项
+>
+> - `useMemo`是一个Hook，所以你只能**在你的组件顶层**或者你自己的Hooks中调用它。您不能在循环或条件内调用它。如果需要，提取一个新组件并将状态移入其中。
+> - 在严格模式下，React 会**调用你的计算函数两次**，以[帮助你发现意外的杂质。](https://zh-hans.react.dev/reference/react/useMemo#my-calculation-runs-twice-on-every-re-render)这是仅限开发的行为，不会影响生产。如果您的计算函数是纯粹的（应该是），这应该不会影响您的逻辑。其中一个调用的结果将被忽略。
+> - **除非有特定原因，否则**React不会丢弃缓存值。例如，在开发中，当您编辑组件的文件时，React 会丢弃缓存。在开发和生产中，如果您的组件在初始挂载期间挂起，React 将丢弃缓存。
+
+### 1、用法
+
+> ### 用法
+>
+> #### 跳过昂贵的重新计算
+>
+> 要在重新渲染时缓存计算，请将其包装`useMemo`在组件顶层的调用中：
+>
+> ````js
+> import { useMemo } from 'react';
+> 
+> function TodoList({ todos, tab, theme }) {
+>   const visibleTodos = useMemo(() => filterTodos(todos, tab), [todos, tab]);
+>   // ...
+> }
+> ````
+>
+> 您需要将两件事传递给`useMemo`：
+>
+> 1. **一个不带参数的计算函数`() =>`，例如，并返回您想要计算的内容。**
+> 2. **依赖项列表，包括计算中使用的组件中的每个值。**
+>
+> 在初始渲染中，您将从中获得的值将是调用calculation`useMemo`的结果。
+>
+> 在每个后续渲染中，React 会将依赖项与您在上次渲染期间传递的依赖项进行比较。如果没有任何依赖项发生变化（与 相比[`Object.is`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is)），`useMemo`将返回您之前计算的值。否则，React 将重新运行您的计算并返回新值。
+>
+> 换句话说，`useMemo`缓存重新渲染之间的计算结果，直到其依赖项发生变化。
+
+#### 1、如何判断计算是否昂贵
+
+> (官方解释)https://zh-hans.react.dev/reference/react/useMemo#how-to-tell-if-a-calculation-is-expensive
+>
+> 一般而言，除非您要创建或遍历数千个对象，否则它可能并不昂贵。 那么如何测试呢。可以通过console来进行测试计算是否非常花费性能
+>
+> ````js
+> console.time('filter array');
+> const visibleTodos = filterTodos(todos, tab);
+> console.timeEnd('filter array');
+> ````
+>
+> 注意: 您的机器可能比用户的机器快，因此最好通过人为减速来测试性能。例如，Chrome为此提供了一个[CPU Throttling选项。](https://developer.chrome.com/blog/new-in-devtools-61/#throttling) 
+
+#### 2、何时使用useMemo
+
+> 优化`useMemo`  只在少数情况下有价值：
+>
+> - 您输入的计算速度`useMemo`明显很慢，而且它的依赖关系很少改变。
+> - 您将它作为 prop 传递给包装在[`memo`. ](https://zh-hans.react.dev/reference/react/memo)如果值没有改变，你想跳过重新渲染。Memoization 让您的组件仅在依赖项不同时才重新渲染。
+> - 你传递的值稍后会作为某个Hook的依赖项使用。例如，可能另一个useMemo计算值依赖于它 。或者你可能依赖于useEffect的这个hooks.
+>
+> https://zh-hans.react.dev/reference/react/useMemo#should-you-add-usememo-everywhere
+
+#### 3、跳过组件的重新渲染
+
+> **默认情况下，当一个组件重新渲染时，React 会递归地重新渲染它的所有子组件。某一块JSX结构没有变化且数据和上一次渲染使用的同一个对象或则数组可以使用**[`memo`](https://zh-hans.react.dev/reference/react/memo) 把这些JSX抽取到子组件中使其跳过重新渲染。
+>
+> 例子：https://zh-hans.react.dev/reference/react/useMemo#skipping-re-rendering-of-components
+
+#### 4、记忆另一个 Hook 的依赖
+
+> 假设您有一个计算依赖于直接在组件主体中创建的对象： 
+>
+> ````js
+> function Dropdown({ allItems, text }) {
+>   const searchOptions = { matchMode: 'whole-word', text };
+> 
+>   const visibleItems = useMemo(() => {
+>     return searchItems(allItems, searchOptions);
+>   }, [allItems, searchOptions]); // 🚩 Caution: Dependency on an object created in the component body
+> ````
+>
+> 依赖这样的对象会破坏记忆点。当组件重新渲染时，组件主体内的所有代码都会再次运行。**创建对象的代码行searchOptions也将在每次重新渲染时运行。**因为`searchOptions`是你调用的依赖`useMemo`，而且每次都不一样，React 知道依赖是不同的，并且`searchItems`每次都重新计算。
+>
+> 要解决此问题，您可以在将`searchOptions`对象作为依赖项传递之前记忆对象*本身：*
+>
+> ````js
+> function Dropdown({ allItems,  text }) { //  text state
+>   const visibleItems = useMemo(() => {
+>     const searchOptions = { matchMode: 'whole-word', text };
+>     return searchItems(allItems, searchOptions);
+>   }, [allItems, text]); // ✅ Only changes when allItems or text changes
+> ````
+>
+> 
+
+#### 5、记忆一个函数
+
+> 要使用 记忆一个函数`useMemo`，您的计算函数必须返回另一个函数： 
+>
+> ````js
+> export default function Page({ productId, referrer }) {
+>   const handleSubmit = useMemo(() => {
+>     return (orderDetails) => {
+>       post('/product/' + productId + '/buy', {
+>         referrer,
+>         orderDetails
+>       });
+>     };
+>   }, [productId, referrer]);
+> 
+>   return <Form onSubmit={handleSubmit} />; // Form被memo包裹起来的组件
+> }
+> ````
+>
+> 这看起来很笨重！**记忆函数很常见，React 有一个专门用于此的内置 Hook。将函数包装成useCallbackinstead ofuseMemo**以避免必须编写额外的嵌套函数： 
+>
+> ````js
+> export default function Page({ productId, referrer }) {
+>   const handleSubmit = useCallback((orderDetails) => {
+>     post('/product/' + productId + '/buy', {
+>       referrer,
+>       orderDetails
+>     });
+>   }, [productId, referrer]);
+> 
+>   return <Form onSubmit={handleSubmit} />;
+> }
+> ````
+>
+> 上面两个例子是完全等价的。唯一的好处`useCallback`是它可以让你避免在里面写一个额外的嵌套函数。它没有做任何其他事情。[阅读更多关于`useCallback`。](https://zh-hans.react.dev/reference/react/useCallback) 
+
+### 2、！！！故障排除
+
+> https://zh-hans.react.dev/reference/react/useMemo#troubleshooting  了解一下就行，很简单
+
+## 十二、useSyncExternalStore
+
+> useSyncExternalStore是一个 React Hook，可以让你订阅一个外部存储。 
+>
+> **比如获取路由中的参数或则状态管理库（Redux）和浏览器API返回的一些数据**
+
+> - 参考
+>   - [`useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot?)`](https://zh-hans.react.dev/reference/react/useSyncExternalStore#usesyncexternalstore)
+> - 用法
+>   - [订阅外部商店](https://zh-hans.react.dev/reference/react/useSyncExternalStore#subscribing-to-an-external-store)
+>   - [订阅浏览器 API](https://zh-hans.react.dev/reference/react/useSyncExternalStore#subscribing-to-a-browser-api)
+>   - [将逻辑提取到自定义 Hook](https://zh-hans.react.dev/reference/react/useSyncExternalStore#extracting-the-logic-to-a-custom-hook)
+>   - [添加对服务器渲染的支持](https://zh-hans.react.dev/reference/react/useSyncExternalStore#adding-support-for-server-rendering)
+> - 故障排除
+>   - [`getSnapshot`我收到一个错误：“应该缓存的结果”](https://zh-hans.react.dev/reference/react/useSyncExternalStore#im-getting-an-error-the-result-of-getsnapshot-should-be-cached)
+>   - [`subscribe`每次重新渲染后都会调用我的函数](https://zh-hans.react.dev/reference/react/useSyncExternalStore#my-subscribe-function-gets-called-after-every-re-render)
+>
+> #### 参考
+>
+> #### `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot?)` 
+>
+> `useSyncExternalStore`在组件的顶层调用以从外部数据存储中读取值。
+>
+> > `useSyncExternalStore`在组件的顶层调用以从外部数据存储中读取值。 
+> >
+> > ````js
+> > import { useSyncExternalStore } from 'react';
+> > import { todosStore } from './todoStore.js';
+> > 
+> > function TodosApp() {
+> >   const todos = useSyncExternalStore(todosStore.subscribe, todosStore.getSnapshot);
+> >   // ...
+> > }
+> > ````
+> >
+> > 它返回存储中数据的快照。您需要传递两个函数作为参数：
+> >
+> > 1. 该`subscribe`函数应该订阅商店并返回一个取消订阅的函数。
+> > 2. 该`getSnapshot`函数应该从存储中读取数据的快照。
+>
+> #### 参数
+>
+> - `subscribe`：一个接受单个`callback` 参数并将其订阅到存储库的函数。当存储更改时，它应该调用提供的`callback` 。这将导致组件重新渲染。订阅函数应该返回一个清理订阅的函数。 
+> - `getSnapshot`：一个函数，它返回组件所需的存储中数据的快照。当存储没有改变时，对getSnapshot的重复调用必须返回相同的值。如果存储更改并且返回值不同(通过Object.is进行比较)，React将重新呈现组件。 
+> - **可选** `getServerSnapshot`：返回存储区中数据的初始快照的函数。它将仅在服务器呈现期间和在客户机上对服务器呈现的内容进行聚合期间使用。服务器快照在客户端和服务器之间必须是相同的，并且通常是序列化的，并从服务器传递到客户端。如果省略此参数，则在服务器上呈现组件将抛出错误。 
+>
+> #### 返回值
+>
+> 可以在呈现逻辑中使用的存储的当前快照。
+>
+> #### 注意事项
+>
+> getSnapshot返回的存储快照必须是不可变的。如果底层存储具有可变数据，则在数据发生更改时返回一个新的不可变快照。否则，返回上次缓存的快照。 
+>
+> 如果在重新呈现期间传递了不同的订阅函数，React将使用新传递的订阅函数重新订阅存储。可以通过在组件外部声明订阅来防止这种情况。
+
+### 1、订阅浏览器 API
+
+> useSyncExternalStore 实际例子
+
+> ````js
+> import { useSyncExternalStore } from 'react';
+> 
+> export default function ChatIndicator() {
+>   const isOnline = useSyncExternalStore(subscribe, getSnapshot);
+>   return <h1>{isOnline ? '✅ Online' : '❌ Disconnected'}</h1>;
+> }
+> 
+> function getSnapshot() {
+>   return navigator.onLine;
+> }
+> 
+> function subscribe(callback) {
+>   window.addEventListener('online', callback);
+>   window.addEventListener('offline', callback);
+>   return () => {
+>     window.removeEventListener('online', callback);
+>     window.removeEventListener('offline', callback);
+>   };
+> }
+> ````
+>
+> 
+
+### 2、将逻辑提取到自定义 Hook
+
+````js
+import { useSyncExternalStore } from 'react';
+
+export function useOnlineStatus() {
+  const isOnline = useSyncExternalStore(subscribe, getSnapshot);
+  return isOnline;
+}
+
+function getSnapshot() {
+  return navigator.onLine;
+}
+
+function subscribe(callback) {
+  window.addEventListener('online', callback);
+  window.addEventListener('offline', callback);
+  return () => {
+    window.removeEventListener('online', callback);
+    window.removeEventListener('offline', callback);
+  };
+}
+
+````
 
 
 
+````js
+import { useOnlineStatus } from './useOnlineStatus.js';
 
+function StatusBar() {
+  const isOnline = useOnlineStatus();
+  return <h1>{isOnline ? '✅ Online' : '❌ Disconnected'}</h1>;
+}
 
+function SaveButton() {
+  const isOnline = useOnlineStatus();
 
+  function handleSaveClick() {
+    console.log('✅ Progress saved');
+  }
 
+  return (
+    <button disabled={!isOnline} onClick={handleSaveClick}>
+      {isOnline ? 'Save progress' : 'Reconnecting...'}
+    </button>
+  );
+}
 
+export default function App() {
+  return (
+    <>
+      <SaveButton />
+      <StatusBar />
+    </>
+  );
+}
 
+````
 
+### 3、添加对服务器渲染的支持
 
+> 了解即可： https://zh-hans.react.dev/reference/react/useSyncExternalStore#adding-support-for-server-rendering
 
+#### 4、故障排除
 
+> https://zh-hans.react.dev/reference/react/useSyncExternalStore#adding-support-for-server-rendering
 
+## 十三、useTransition
 
+> useTransition是一个React Hook，可以让你在不阻塞UI的情况下更新状态。 
+>
+> ````js
+> import { useTransition } from 'react';
+> 
+> function TabContainer() {
+>   const [isPending, startTransition] = useTransition();
+>   // ...
+> }
+> ````
+>
+> - 参考
+>   - [`useTransition()`](https://zh-hans.react.dev/reference/react/useTransition#usetransition)
+>   - [`startTransition`功能](https://zh-hans.react.dev/reference/react/useTransition#starttransition)
+> - 用法
+>   - [将状态更新标记为非阻塞转换](https://zh-hans.react.dev/reference/react/useTransition#marking-a-state-update-as-a-non-blocking-transition)
+>   - [在过渡中更新父组件](https://zh-hans.react.dev/reference/react/useTransition#updating-the-parent-component-in-a-transition)
+>   - [在过渡期间显示挂起的视觉状态](https://zh-hans.react.dev/reference/react/useTransition#displaying-a-pending-visual-state-during-the-transition)
+>   - [防止不需要的加载指示器](https://zh-hans.react.dev/reference/react/useTransition#preventing-unwanted-loading-indicators)
+>   - [构建一个支持 Suspense 的路由器](https://zh-hans.react.dev/reference/react/useTransition#building-a-suspense-enabled-router)
+> - 故障排除
+>   - [在转换中更新输入不起作用](https://zh-hans.react.dev/reference/react/useTransition#updating-an-input-in-a-transition-doesnt-work)
+>   - [React 不会将我的状态更新视为转换](https://zh-hans.react.dev/reference/react/useTransition#react-doesnt-treat-my-state-update-as-a-transition)
+>   - [`useTransition`我想从组件外部调用](https://zh-hans.react.dev/reference/react/useTransition#i-want-to-call-usetransition-from-outside-a-component)
+>   - [我传递给`startTransition`的函数被立即执行](https://zh-hans.react.dev/reference/react/useTransition#the-function-i-pass-to-starttransition-executes-immediately)
+>
+> 
+>
+> #### 参数
+>
+> `useTransition`不带任何参数
+>
+> #### 返回值
+>
+> useTransition返回一个包含两个元素的数组: 
+>
+> isPending标志，告诉您是否存在挂起的转换。 
+>
+> startTransition函数允许您将状态更新标记为转换。
+>
+> #### `startTransition`功能
+>
+> `startTransition`返回的函数允许`useTransition`您将状态更新标记为转换。
+>
+> ````js
+> function TabContainer() {
+>   const [isPending, startTransition] = useTransition();
+>   const [tab, setTab] = useState('about');
+> 
+>   function selectTab(nextTab) {
+>     startTransition(() => {
+>       setTab(nextTab);
+>     });
+>   }
+> }
+> ````
+>
+> #### 参数
+>
+> - `scope`[`set`：通过调用一个或多个函数](https://zh-hans.react.dev/reference/react/useState#setstate)来更新某些状态的函数。React 立即调用不带参数`scope`，并将在`scope`函数调用期间同步安排的所有状态更新标记为转换。它们将是[非阻塞的](https://zh-hans.react.dev/reference/react/useTransition#marking-a-state-update-as-a-non-blocking-transition)，[不会显示不需要的加载指示器。](https://zh-hans.react.dev/reference/react/useTransition#preventing-unwanted-loading-indicators)
+>
+> #### 返回值
+>
+> `startTransition`不返回任何东西。 
+>
+> #### 注意事项
+>
+> **1、useTransition是一个钩子，所以它只能在组件或自定义钩子中调用。如果您需要在其他地方开始转换(例如，从一个数据库)，则调用独立的startTransition。** 
+>
+> **2、只有当您有权访问该状态的set函数时，才能将更新包装到转换中。如果你想在响应某个prop或自定义Hook值时启动转换，请尝试使用useDeferredValue。** 
+>
+> **3、传递给startTransition的函数必须是同步的。React立即执行此函数，并将执行时发生的所有状态更新标记为转换。如果稍后尝试执行更多状态更新(例如，在超时中)，则不会将其标记为转换。** 
+>
+> **4、标记为转换的状态更新将被其他状态更新中断。例如，如果你在一个过渡中更新了一个图表组件，但是当图表处于重新呈现的过程中时，你开始在一个输入中输入，React将在处理输入更新后重新开始图表组件上的呈现工作。** 
+>
+>  **5、转换更新不能用于控制文本输入。**
 
+### 1、在过渡中更新父组件
 
+> 您也可以从useTransition调用中更新父组件的状态 
+>
+> ````js
+> export default function TabButton({ children, isActive, onClick }) {
+>   const [isPending, startTransition] = useTransition();
+>   if (isActive) {
+>     return <b>{children}</b>
+>   }
+>   return (
+>     <button onClick={() => {
+>       startTransition(() => {
+>         onClick();
+>       });
+>     }}>
+>       {children}
+>     </button>
+>   );
+> }
+> ````
+>
+> 
 
+### 2、在转换期间显示挂起的过度状态
 
+ ````js
+function TabButton({ children, isActive, onClick }) {
+  const [isPending, startTransition] = useTransition();
+  // ...
+  if (isPending) {
+    return <b className="pending">{children}</b>;
+  }
+  // ...
+ ````
 
+### 3、防止不必要的加载指示器
 
+> 隐藏整个选项卡容器以显示加载指示符会导致用户体验不和谐。如果将useTransition添加到TabButton，则可以在选项卡按钮中指示显示挂起状态。 
+>
+> https://zh-hans.react.dev/reference/react/useTransition#preventing-unwanted-loading-indicators
 
+### 4、构建一个支持 Suspense 的路由器
 
+> 推荐这样做有两个原因：
+>
+> - [过渡是可中断的，](https://zh-hans.react.dev/reference/react/useTransition#marking-a-state-update-as-a-non-blocking-transition)这让用户无需等待重新渲染完成就可以点击离开。
+> - [过渡可以防止不需要的加载指示器，](https://zh-hans.react.dev/reference/react/useTransition#preventing-unwanted-loading-indicators)这可以让用户避免在导航中出现不和谐的跳跃。
 
+### 5、故障排除
 
-
-
-
-
-
-
-
-
-
-
-
+> https://zh-hans.react.dev/reference/react/useTransition#troubleshooting
