@@ -1,3 +1,5 @@
+# HOOKS
+
 ## 一、使用 ref 引用值
 
 > 当你希望组件“记住”某些信息，但又不想让这些信息 [触发新的渲染](https://zh-hans.react.dev/learn/render-and-commit) 时，你可以使用 *ref* 。 
@@ -344,11 +346,11 @@
 >
 > ​		依赖项 -> []（能变化的变量）
 >
-> 			> 1、依赖项数组可以包含多个依赖项。只有当你指定的所有依赖项与之前渲染时的值完全相同时，React才会跳过重新运行效果。 
-> 			>
-> 			> 2、注意，你不能“选择”你的依赖项。如果你指定的依赖项与React基于你的Effect中的代码所期望的不匹配，你会得到一个lint错误。
->
+> ```js
+> > 1、依赖项数组可以包含多个依赖项。只有当你指定的所有依赖项与之前渲染时的值完全相同时，React才会跳过重新运行效果。 
 > 
+> > 2、注意，你不能“选择”你的依赖项。如果你指定的依赖项与React基于你的Effect中的代码所期望的不匹配，你会得到一个lint错误。
+> ```
 >
 > ​	无返回值
 
@@ -376,7 +378,7 @@
 
 ### 2、!!!你可能不需要效果
 
-> **不要急于向组件添加特效。记住，特效通常是用来“跳出”你的React代码，并与一些外部系统同步。这包括浏览器api、第三方小部件、网络等等。如果您的Effect仅根据其他状态调整某些状态，则可能不需要Effect。** 
+> **不要急于向组件添加Effect。记住，特效通常是用来“跳出”你的React代码，并与一些外部系统同步。这包括浏览器api、第三方小部件、网络等等。如果您的Effect仅根据其他状态调整某些状态，则可能不需要Effect。** 
 
 ### 3、如何编写效果
 
@@ -1726,3 +1728,564 @@ function TabButton({ children, isActive, onClick }) {
 ### 5、故障排除
 
 > https://zh-hans.react.dev/reference/react/useTransition#troubleshooting
+
+# API
+
+## 一、forwardRef
+
+> `forwardRef`让您的组件通过 ref 向父组件公开 DOM 节点[。](https://zh-hans.react.dev/learn/manipulating-the-dom-with-refs) 
+>
+> ````
+> const SomeComponent = forwardRef(render)
+> ````
+>
+> - 参考
+>   - [`forwardRef(render)`](https://zh-hans.react.dev/reference/react/forwardRef#forwardref)
+>   - [`render`功能](https://zh-hans.react.dev/reference/react/forwardRef#render-function)
+> - 用法
+>   - [将 DOM 节点暴露给父组件](https://zh-hans.react.dev/reference/react/forwardRef#exposing-a-dom-node-to-the-parent-component)
+>   - [通过多个组件转发 ref](https://zh-hans.react.dev/reference/react/forwardRef#forwarding-a-ref-through-multiple-components)
+>   - [公开命令句柄而不是 DOM 节点](https://zh-hans.react.dev/reference/react/forwardRef#exposing-an-imperative-handle-instead-of-a-dom-node)
+> - 故障排除
+>   - [我的组件包装在 中`forwardRef`，但`ref`它始终是`null`](https://zh-hans.react.dev/reference/react/forwardRef#my-component-is-wrapped-in-forwardref-but-the-ref-to-it-is-always-null)
+>
+> ## 参考
+>
+> ### `forwardRef(render)` 
+>
+> 调用`forwardRef()`让您的组件接收 ref 并将其转发给子组件：
+>
+> ````js
+> import { forwardRef } from 'react';
+> 
+> const MyInput = forwardRef(function MyInput(props, ref) {
+>   // ...
+> });
+> ````
+>
+> #### 参数
+>
+> - `render`: 组件的渲染函数。React 使用 props 调用此函数，并且`ref`您的组件从其父组件接收到。您返回的 JSX 将是您组件的输出。
+>
+> #### 返回值
+>
+> > `forwardRef`返回一个可以在 JSX 中呈现的 React 组件。与定义为普通函数的 React 组件不同，由 返回的组件`forwardRef`也能够接收`ref`prop。 
+>
+> #### 注意事项
+>
+> > 在 Strict Mode 中，React 会调用你的 render 函数两次以帮助你找到意外的不纯性。这只是开发环境中的行为，不会影响生产环境。如果你的 render 函数是纯的（应该是这样的），这不会影响你的组件的逻辑。其中一次调用的结果将被忽略。 
+
+### 1、render功能
+
+> forwardRef接受一个渲染函数作为参数。React将使用props和ref调用此函数： 
+>
+> ````js
+> const MyInput = forwardRef(function MyInput(props, ref) {
+>   return (
+>     <label>
+>       {props.label}
+>       <input ref={ref} />
+>     </label>
+>   );
+> });
+> ````
+>
+> #### 参数
+>
+> - `props`: 父组件传递的 props。
+> - `ref`:由父组件传递的ref属性。ref可以是一个对象或者一个函数。如果父组件没有传递ref，它将为null。你应该将接收到的ref传递给另一个组件，或者传递给[`useImperativeHandle`.](https://zh-hans.react.dev/reference/react/useImperativeHandle)
+>
+> #### 返回值
+>
+> forwardRef返回一个React组件，你可以在JSX中渲染它。与定义为普通函数的React组件不同，forwardRef返回的组件可以接受ref属性。 
+
+### 2、将 DOM 节点暴露给父组件
+
+> 将DOM节点暴露给父组件 默认情况下，每个组件的DOM节点都是私有的。但是，有时将DOM节点暴露给父组件很有用. 
+>
+> ````js
+> const FormField = forwardRef(function FormField(props, ref) {
+>   // ...
+>   return (
+>     <>
+>       <MyInput ref={ref} />
+>       ...
+>     </>
+>   );
+> });
+> ````
+>
+> 
+
+### 3、通过多个组件转发 ref
+
+> https://zh-hans.react.dev/reference/react/forwardRef#forwarding-a-ref-through-multiple-components   掌握
+
+### 4、暴露命令式处理程序而不是DOM节点 
+
+> 你可以暴露一个自定义对象，称为命令式处理程序，而不是整个DOM节点，该对象具有一组更受限制的方法。为此，你需要定义一个单独的ref来保存DOM节点： 
+>
+> ````js
+> const MyInout = forwardRef(function MyInput(props, ref) {
+>     const inputRef = useRef(null);
+>     return <input {...props} ref={inputRef} />
+> })
+> ````
+>
+> 将你接收到的ref传递给[`useImperativeHandle`](https://zh-hans.react.dev/reference/react/useImperativeHandle) ，并指定你想要暴露给ref的值： 
+>
+> ````js
+> import { forwarRef, useRef, useImperrativeHandle } from 'react'
+> 
+> const Myinput = forwardRef(function MyInput(props, ref) {
+>     const inputRef = useRef(null);
+>     useImperativeHandle(ref, () => {
+>         return {
+>   			focus() {
+>                 inputRef.current.focus();
+>               },
+>               scrollIntoView() {
+>                 inputRef.current.scrollIntoView();
+>               },
+>         }
+>     }, [])
+>     return <input {...props} ref={inputRef}>
+> })
+> 
+> ````
+>
+> 如果某个组件获取了MyInput的ref，它只会收到你的{ focus，scrollIntoView }对象，而不是DOM节点。这使你可以将暴露的有关DOM节点的信息限制到最小。 
+
+### 5、警告
+
+> 不要过度使用Refs。你应该只在无法用Props表达的情况下使用Refs，比如滚动到一个节点、将一个节点聚焦、触发动画、选择文本等等。
+>
+> 如果你可以用Props表达某些行为，就不应该使用Ref。例如，不要从Modal组件中暴露像{open，close}这样的命令式处理程序，而是应该将isOpen作为一个Props传递，例如<Modal isOpen={isOpen} />。使用Effect可以帮助你通过Props暴露命令式行为。
+
+## 二、lazy
+
+> `lazy` 能够让你在组件第一次被渲染之前延迟加载组件的代码。 
+>
+> ````js
+> const SomeComponent = lazy(load)
+> ````
+>
+> - 参考
+>   - [`lazy(load)`](https://zh-hans.react.dev/reference/react/lazy#lazy)
+>   - [`load` 函数](https://zh-hans.react.dev/reference/react/lazy#load)
+> - 使用方法
+>   - [使用 Suspense 实现懒加载组件](https://zh-hans.react.dev/reference/react/lazy#suspense-for-code-splitting)
+> - 疑难解答
+>   - [我的 `lazy` 组件状态意外重置](https://zh-hans.react.dev/reference/react/lazy#my-lazy-components-state-gets-reset-unexpectedly)
+>
+> ## 参考
+>
+> ##### `lazy(load)` 
+>
+> 在组件外部调用 `lazy`，以声明一个懒加载的 React 组件: 
+>
+> ````js
+> import { lazy } from 'react';
+> 
+> const MarkdownPreview = lazy(() => import('./MarkdownPreview.js'));
+> ````
+>
+> #### 参数
+>
+> - `load`: 一个返回 [Promise](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise) 或另一个 *thenable*（具有 `then` 方法的类 Promise 对象）的函数。在你尝试第一次渲染返回的组件之前，React 是不会调用 load 函数的。在 React 首次调用 `load` 后，它将等待其解析，然后将解析值渲染成 React 组件。返回的 Promise 和 Promise 的解析值都将被缓存，因此 React 不会多次调用 `load` 函数。如果 Promise 被拒绝，则 React 将抛出拒绝原因给最近的错误边界处理。
+>
+> #### 返回值
+>
+> `lazy` 返回一个 React 组件，你可以在 fiber 树中渲染。当懒加载组件的代码仍在加载时，尝试渲染它将会处于 *暂停* 状态。使用 [``](https://zh-hans.react.dev/reference/react/Suspense) 可以在其加载时显示一个正在加载的提示。
+
+### `load`函数
+
+#### 参数
+
+`load`不接收任何参数。
+
+#### 返回值
+
+你需要返回一个 [Promise](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise) 或其他 *thenable* （具有 `then` 方法的类 Promise 对象）。它最终需要解析为有效的 React 组件类型，例如函数、[`memo`](https://zh-hans.react.dev/reference/react/memo) 或 [`forwardRef`](https://zh-hans.react.dev/reference/react/forwardRef) 组件。
+
+### 1、使用 Suspense 实现懒加载组件
+
+通常，你可以使用静态 [`import`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/import) 声明来导入组件： 
+
+```js
+import MarkdownPreview from './MarkdownPreview.js';
+```
+
+如果想在组件第一次渲染前延迟加载这个组件的代码，请替换成以下导入方式： 
+
+````js
+import { lazy } from 'react';
+
+const MarkdownPreview = lazy(() => import('./MarkdownPreview.js'));
+````
+
+此代码依赖于 [动态 `import()`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/import)，可能需要你的打包工具或框架提供支持。
+
+现在你的组件代码可以按需加载，同时你需要指定在它正在加载时应该显示什么。你可以通过将懒加载组件或其任何父级包装到 [`Suspense  `](https://zh-hans.react.dev/reference/react/Suspense) 边界中来实现：
+
+````js
+<Suspense fallback={<Loading />}>
+  <h2>Preview</h2>
+  <MarkdownPreview />
+ </Suspense>
+````
+
+### 我的 `lazy` 组件状态意外重置
+
+不要在其他组件 *内部* 声明 `lazy` 组件： 
+
+````
+import { lazy } from 'react';
+
+function Editor() {
+  // 🔴 Bad: 这将导致在重新渲染时重置所有状态
+  const MarkdownPreview = lazy(() => import('./MarkdownPreview.js'));
+  // ...
+}
+````
+
+相反，总是在模块的顶层声明它们： 
+
+````
+import { lazy } from 'react';
+
+// ✅ Good: 将 lazy 组件声明在组件外部
+const MarkdownPreview = lazy(() => import('./MarkdownPreview.js'));
+
+function Editor() {
+  // ...
+}
+````
+
+
+
+## 三、memo
+
+React.memo() 函数可以让你在组件的 props 未改变时跳过重新渲染。 
+
+````js
+const MemoizedComponent = memo(SomeComponent, arePropsEqual?)
+````
+
+> - 参考
+>   - [`memo(Component, arePropsEqual?)`](https://zh-hans.react.dev/reference/react/memo#memo)
+> - 用法
+>   - [道具不变时跳过重新渲染](https://zh-hans.react.dev/reference/react/memo#skipping-re-rendering-when-props-are-unchanged)
+>   - [使用状态更新记忆组件](https://zh-hans.react.dev/reference/react/memo#updating-a-memoized-component-using-state)
+>   - [使用上下文更新记忆组件](https://zh-hans.react.dev/reference/react/memo#updating-a-memoized-component-using-a-context)
+>   - [最小化道具变化](https://zh-hans.react.dev/reference/react/memo#minimizing-props-changes)
+>   - [指定自定义比较函数](https://zh-hans.react.dev/reference/react/memo#specifying-a-custom-comparison-function)
+> - 故障排除
+>   - [当 prop 是对象、数组或函数时，我的组件会重新渲染](https://zh-hans.react.dev/reference/react/memo#my-component-rerenders-when-a-prop-is-an-object-or-array)
+
+## Reference 
+
+### `memo(Component, arePropsEqual?)` 
+
+将一个组件包裹在 React.memo() 中，可以得到该组件的记忆化版本。只要该组件的 props 未改变，通常情况下，这个记忆化版本的组件在其父组件重新渲染时不会被重新渲染。但是，React 可能仍会重新渲染它：记忆化是一种性能优化，而不是一种保证。 
+
+```
+import { memo } from 'react';
+
+const SomeComponent = memo(function SomeComponent(props) {
+  // ...
+});
+```
+
+#### 参数
+
+- Component ：你想要进行记忆化的组件。React.memo() 不会修改此组件，而是返回一个新的记忆化组件。任何有效的 React 组件，包括函数组件和 forwardRef 组件，都可以被接受。
+- **optional** `arePropsEqual`： 一个函数，接受两个参数：组件的先前 props 和新 props。如果旧的和新的 props 相等，它应该返回 true，即如果组件在新的 props 下呈现相同的输出并以相同的方式运行，就像在旧的 props 下一样。否则，它应该返回 false。通常情况下，你不需要指定这个函数。默认情况下，React 会使用 Object.is 来比较每个 prop。
+
+#### 返回值
+
+React.memo() 返回一个新的 React 组件。它的行为与 memo 所提供的组件相同，除非其 props 发生了改变，否则 React 不会总是在父组件重新渲染时重新渲染它。 
+
+### 1、道具不变时跳过重新渲染
+
+通常情况下，当组件的父组件重新渲染时，React 会重新渲染该组件。使用 memo，您可以创建一个组件，只要其新的 props 与旧的 props 相同，React 就不会重新渲染它，这样的组件被称为记忆化组件。
+
+要记忆化一个组件，将其包裹在 memo 中，并使用它返回的值来替换原始组件：
+
+````js
+const Greeting = memo(function Greeting({ name }) {
+  return <h1>Hello, {name}!</h1>;
+});
+
+export default Greeting;
+````
+
+一个 React 组件应该始终具有纯粹的渲染逻辑。这意味着，如果组件的 props、state 和 context 没有改变，它必须返回相同的输出。通过使用 memo，你告诉 React，你的组件符合这个要求，因此只要它的 props 没有改变，React 就不需要重新渲染。**即使使用 memo，如果组件自身的 state 发生变化或它正在使用的 context 发生变化，组件仍会重新渲染。** \
+
+>#### 注意
+>
+>你应该将 memo 视为一种性能优化，而不是必须的东西。如果你的代码没有 memo 无法正常工作，那么首先要找到潜在的问题并解决它。然后，你可以添加 memo 来提高性能。 
+
+### 2、不应该在所有组件中都使用 memo。 
+
+> 实际上，你可以通过遵循以下几个原则来减少记忆化的使用：
+>
+> - 当一个组件在视觉上包裹其他组件时，让它接受 JSX 作为 children。这样，当包装组件更新自己的状态时，React 知道它的子组件不需要重新渲染。
+> - 尽可能使用本地状态，不要将状态抬升到不必要的高度。例如，不要将短暂状态（如表单和项目是否悬停）保存在树的顶部或全局状态库中。
+> - 保持你的渲染逻辑是纯粹的。如果重新渲染组件会引起问题或产生一些明显的视觉问题，那么这是组件中的一个 bug！修复 bug 而不是添加记忆化。
+> - 避免更新状态的不必要 Effects。React 应用程序中大多数性能问题都是由 Effects 引起的更新链导致你的组件一遍又一遍地重新渲染。
+> - 尽量从 Effect 中删除不必要的依赖关系。例如，与其使用记忆化，通常更简单的方法是将一些对象或函数移动到 Effect 内部或组件外部。
+>
+> 如果某个具体的交互仍然感觉很卡顿，可以使用 React Developer Tools 分析器来查看哪些组件会最受记忆化的好处，然后在需要的地方添加记忆化。这些原则使你的组件更易于调试和理解，所以无论如何都要遵循它们。从长远来看，我们正在研究自动进行细粒度记忆化，以解决这个问题
+
+### 3、使用状态更新记忆组件
+
+> https://zh-hans.react.dev/reference/react/memo#updating-a-memoized-component-using-state
+>
+> 如果将一个状态变量设置为其当前值（判断语句 更新state  如果没有通过则不设置新的state），即使没有使用 memo，React 也会跳过重新渲染组件。你可能仍然会看到组件函数被调用了一次，但结果将被丢弃。 
+
+### 4、useContext 更新有记忆组件
+
+>即使一个组件被记忆化了，当它使用的上下文（Context）发生更改时，它仍然会重新渲染。记忆化只与从父组件传递给组件的 props 有关。
+>
+>Context 是 React 中共享数据的一种方式，可以被多个组件访问。当一个使用 Context 的组件所消费的上下文值发生更改时，React 将会重新渲染该组件，即使该组件已被记忆化。\
+>
+>https://zh-hans.react.dev/reference/react/memo#updating-a-memoized-component-using-a-context
+
+### 5、最小化Props更改
+
+当你使用 memo 时，只要任何一个 prop 不等于它以前的值，你的组件就会重新渲染。这意味着 React 使用 Object.is 比较每个 prop 与其先前的值。请注意，Object.is(3, 3) 为 true，但 Object.is({}, {}) 为 false。
+
+为了充分利用 memo，尽量减少 props 更改的次数。例如，如果 prop 是一个对象，请使用 useMemo 防止父组件每次重新创建该对象：
+
+````js
+const MyComponent = ({ data }) => {
+  return <div>{data}</div>;
+};
+
+const ParentComponent = () => {
+  const data = useMemo(() => ({ name: "John", age: 30 }), []); // use useMemo to prevent re-creating data object
+  return <MyComponent data={data} />;
+};
+````
+
+减少 props 更改的更好方法是确保组件在其 props 中接受最少必要的信息。例如，它可以接受单独的值而不是整个对象： 
+
+````js
+function Page() {
+  const [name, setName] = useState('Taylor');
+  const [age, setAge] = useState(42);
+  return <Profile name={name} age={age} />;
+}
+
+const Profile = memo(function Profile({ name, age }) {
+  // ...
+});
+````
+
+即使是单独的值有时也可以转换为更不经常更改的值。例如，这里的一个组件接受一个布尔值来指示值的存在与否，而不是值本身： 
+
+````js
+function GroupsLanding({ person }) {
+  const hasGroups = person.groups !== null;
+  return <CallToAction hasGroups={hasGroups} />;
+}
+
+const CallToAction = memo(function CallToAction({ hasGroups }) {
+  // ...
+});
+````
+
+当你需要将一个函数传递给 memoized 组件时，可以将它声明在组件外部，以便它永远不会改变，或者使用 useCallback 将其定义缓存起来，避免在重新渲染时重新定义。 
+
+````js
+const MyComponent = ({ onClick }) => {
+  return <button onClick={onClick}>Click me</button>;
+};
+
+const handleClick = () => {
+  console.log("Button clicked");
+};
+
+const ParentComponent = () => {
+  return <MyComponent onClick={handleClick} />;
+};	
+````
+
+另一种方法是使用 useCallback 来缓存函数定义。useCallback 接受一个函数和一个依赖数组作为参数，并返回一个 memoized 版本的函数。每当依赖数组中的任何一个值发生更改时，useCallback 将重新计算 memoized 函数，并返回新的版本。这可以确保在重新渲染组件时，函数不会被重新定义，除非依赖项发生更改 
+
+````js
+const MyComponent = ({ onClick }) => {
+  return <button onClick={onClick}>Click me</button>;
+};
+
+const ParentComponent = () => {
+  const handleClick = useCallback(() => {
+    console.log("Button clicked");
+  }, []); // use useCallback to cache handleClick function definition
+  return <MyComponent onClick={handleClick} />;
+};
+````
+
+### 6、指定自定义比较函数
+
+在极少数情况下，可能无法减少 memoized 组件的 props 更改。在这种情况下，可以提供一个自定义比较函数，React 将使用它来比较旧的和新的 props，而不是使用浅层相等性。这个函数作为 memo 的第二个参数传递进去。它应该只返回 true，如果新的 props 会产生与旧的 props 相同的输出；否则应该返回 false。
+
+使用自定义比较函数可以让你完全控制组件何时重新渲染。这对于某些高度动态的组件可能是必要的，例如具有大量内部状态的复杂表单或图形组件。
+
+````js
+const Chart = memo(function Chart({ dataPoints }) {
+  // ...
+}, arePropsEqual);
+
+function arePropsEqual(oldProps, newProps) {
+  return (
+    oldProps.dataPoints.length === newProps.dataPoints.length &&
+    oldProps.dataPoints.every((oldPoint, index) => {
+      const newPoint = newProps.dataPoints[index];
+      return oldPoint.x === newPoint.x && oldPoint.y === newPoint.y;
+    })
+  );
+}
+````
+
+如果这样做，请使用浏览器开发人员工具中的性能面板来确保您的比较功能实际上比重新渲染组件更快。你可能会感到惊讶。 
+
+当您进行性能测量时，请确保 React 在生产模式下运行。 
+
+> ### 陷阱
+>
+> 如果你提供了一个自定义的 `arePropsEqual` 实现，**你必须比较每一个 prop，包括函数**。函数通常会闭包父组件的 props 和 state。如果你在 `arePropsEqual` 中返回 `true`，而旧的 props 和新的 props 中 `onClick` **函数不相等**，那么你的组件在其 `onClick` 处理函数中将会继续“看到”先前渲染中的 props 和 state，从而导致非常令人困惑的错误。
+>
+> 除非你100%确定你正在处理的数据结构具有已知的有限深度，否则避免在 `arePropsEqual` 中进行深度相等性检查。**深度相等性检查可能会变得非常慢**，并且如果某人稍后更改数据结构，则可能会冻结你的应用程序数秒钟。
+
+### 7、故障排除
+
+#### 当 prop 是对象、数组或函数时，我的组件会重新渲染
+
+> React 通过浅相等来比较新旧 props：也就是说，它会考虑每个新 prop 是否引用等于旧 prop。如果每次重新渲染父级时都创建一个新对象或数组，即使各个元素都相同，React 仍会认为它已更改。同样，如果你在渲染父组件时创建了一个新的函数，即使函数定义相同，React 也会认为它发生了变化。为避免这种情况，请[在父组件中简化 props 或 memoize props](https://zh-hans.react.dev/reference/react/memo#minimizing-props-changes)。 
+
+## 四、startTransition
+
+`startTransition` 可以让你在不阻塞 UI 的情况下更新 state。 
+
+````
+startTransition(scope)
+````
+
+- 参考
+  - [`startTransition(scope)`](https://zh-hans.react.dev/reference/react/startTransition#starttransitionscope)
+- 使用方法
+  - [将 state 更新标记为非阻塞 transition](https://zh-hans.react.dev/reference/react/startTransition#marking-a-state-update-as-a-non-blocking-transition)
+
+### 参考 
+
+### `startTransition(scope)` 
+
+`startTransition` 函数可以将 state 更新标记为 transition。
+
+````js
+import { startTransition } from 'react';
+
+function TabContainer() {
+  const [tab, setTab] = useState('about');
+
+  function selectTab(nextTab) {
+    startTransition(() => {
+      setTab(nextTab);
+    });
+  }
+  // ...
+}
+````
+
+#### 参数 
+
+- `scope`：调用一个或多个 [`set` 函数](https://zh-hans.react.dev/reference/react/useState#setstate) 来更新 state 的函数。React 会立即调用没有参数的 `scope`，并将在 `scope` 函数调用期间，调度所有的 state，并将同步更新标记为 transition。它们是 [非阻塞的](https://zh-hans.react.dev/reference/react/useTransition#marking-a-state-update-as-a-non-blocking-transition)，并且 [不会显示不想要的加载提示](https://zh-hans.react.dev/reference/react/useTransition#preventing-unwanted-loading-indicators)。
+
+#### 返回值 
+
+`startTransition` 不返回任何内容。
+
+#### 注意事项 
+
+- `startTransition` 没有提供一种跟踪 transition 是否处于待定状态的方法。为了在 transition 进行时显示一个待定状态的指示器，你需要使用 [`useTransition`](https://zh-hans.react.dev/reference/react/useTransition)。
+- 只有当你能访问某个 state 的 `set` 函数时，你才能将它的更新包裹到 transition 中。如果你想根据 props 或自定义 Hook 的返回值来启动一个 transition，请尝试使用 [`useDeferredValue`](https://zh-hans.react.dev/reference/react/useDeferredValue)。
+- 你传递给 `startTransition` 的函数必须是同步的。React 会立即执行此函数，将其执行期间发生的所有 state 更新标记为 transition。如果你想试着稍后执行更多的 state 更新（例如，在 timeout 中），它们不会被标记为转换。
+- 一个被标记为 transition 的 state 更新时将会被其他 state 更新打断。例如，如果你在 transition 内部更新图表组件，但在图表重新渲染时在输入框中打字，则 React 将先处理输入 state 更新，之后才会重新启动对图表组件的渲染工作。
+- transition 更新不能用于控制文本输入。
+- 如果有多个正在进行的 transition，当前 React 会将它们集中在一起处理。这是一个限制，在未来的版本中可能会被移除。
+
+###  1、将 state 更新标记为非阻塞 transition 
+
+ 你可以通过将一个 state 包裹在 `startTransition` 回调中，将其更新标记为一个 **transition**： 
+
+````js
+import { startTransition } from 'react';
+
+function TabContainer() {
+  const [tab, setTab] = useState('about');
+
+  function selectTab(nextTab) {
+    startTransition(() => {
+      setTab(nextTab);
+    });
+  }
+  // ...
+}
+````
+
+transition 可以让用户界面在慢速设备上保持更新响应。
+
+通过 transition，你的 UI 在重新渲染过程中保持响应。例如，如果用户单击一个选项卡后又改变主意并单击另一个选项卡，则可以在第一次重新渲染完成之前执行此操作而无需等待。
+
+````
+startTransition 与 useTransition 非常相似，但它不提供 isPending 标志来跟踪一个 transition 是否正在进行。你可以在 useTransition 不可用时调用 startTransition。例如，在组件外部（如从数据库中）使用 startTransition。
+
+在 useTransition 页面上了解 transition 并查看示例。
+````
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
