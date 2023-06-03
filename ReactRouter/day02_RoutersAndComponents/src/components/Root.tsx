@@ -1,9 +1,5 @@
 import { useNavigate, Outlet } from 'react-router-dom';
 
-
-
-import Team from './Team.tsx';
-
 const Root = () => {
   const navigation = useNavigate();
   return (
