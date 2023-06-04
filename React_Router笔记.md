@@ -1967,109 +1967,973 @@ interface ShouldRevalidateFunction {
 }
 ````
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Components
+
+## Await
+
+用于呈现带有自动错误处理的[deferred](https://reactrouter.com/en/main/utils/defer)  值。请确保查看[延迟数据指南](https://reactrouter.com/en/main/guides/deferred) ，因为有一些API与此组件一起使用。 
+
+````react
+import { Await, useLoaderData } from "react-router-dom";
+
+function Book() {
+  const { book, reviews } = useLoaderData();
+  return (
+    <div>
+      <h1>{book.title}</h1>
+      <p>{book.description}</p>
+      <React.Suspense fallback={<ReviewsSkeleton />}>
+        <Await
+          resolve={reviews}
+          errorElement={
+            <div>Could not load reviews 😬</div>
+          }
+          children={(resolvedReviews) => (
+            <Reviews items={resolvedReviews} />
+          )}
+        />
+      </React.Suspense>
+    </div>
+  );
+}
+````
+
+> 注意：<Await>需要在<React.Suspense>或<React.SuspenseList>父组件中呈现，以启用回退UI。 
+
+> **类型注释**
+>
+> ````ts
+> declare function Await(
+>   props: AwaitProps
+> ): React.ReactElement;
+> 
+> interface AwaitProps {
+>   children: React.ReactNode | AwaitResolveRenderFunction;
+>   errorElement?: React.ReactNode;
+>   resolve: TrackedPromise | any;
+> }
+> 
+> interface AwaitResolveRenderFunction {
+>   (data: Awaited<any>): React.ReactElement;
+> }
+> ````
+>
+> 
+
+### children
+
+可以是React元素或函数。
+
+当使用函数时，值作为唯一参数提供。
+
+````
+<Await resolve={reviewsPromise}>
+  {(resolvedReviews) => <Reviews items={resolvedReviews} />}
+</Await>
+````
+
+当使用React元素时，useAsyncValue将提供数据： 
+
+````react
+<Await resolve={reviewsPromise}>
+  <Reviews />
+</Await>;
+
+function Reviews() {
+  const resolvedReviews = useAsyncValue();
+  return <div>{/* ... */}</div>;
+}
+````
+
+### errorElement
+
+当Promise被拒绝时，错误元素将呈现，代替子元素。您可以使用useAsyncError访问错误。
+
+如果Promise被拒绝，您可以使用useAsyncError钩子提供可选的errorElement，以在上下文UI中处理错误。
+
+```
+<Await
+  resolve={reviewsPromise}
+  errorElement={<ReviewsError />}
+>
+  <Reviews />
+</Await>;
+
+function ReviewsError() {
+  const error = useAsyncError();
+  return <div>{error.message}</div>;
+}
+```
+
+如果您未提供errorElement，则拒绝的值将冒泡到最近的路由级别errorElement，并可通过useRouteError钩子访问。 
+
+### resolve
+
+接受从延迟加载器值返回的Promise，以便解析和呈现。 
+
+````react
+import {
+  defer,
+  Route,
+  useLoaderData,
+  Await,
+} from "react-router-dom";
+
+// given this route
+<Route
+  loader={async () => {
+    let book = await getBook();
+    let reviews = getReviews(); // not awaited
+    return defer({
+      book,
+      reviews, // this is a promise
+    });
+  }}
+  element={<Book />}
+/>;
+
+function Book() {
+  const {
+    book,
+    reviews, // this is the same promise
+  } = useLoaderData();
+  return (
+    <div>
+      <h1>{book.title}</h1>
+      <p>{book.description}</p>
+      <React.Suspense fallback={<ReviewsSkeleton />}>
+        <Await
+          // and is the promise we pass to Await
+          resolve={reviews}
+        >
+          <Reviews />
+        </Await>
+      </React.Suspense>
+    </div>
+  );
+}
+````
+
+## Form 
+
+ Form组件是一个包装器，用于模拟浏览器的客户端路由和数据变异的普通HTML表单。它不是像您在React生态系统中使用的表单验证/状态管理库（对此，我们建议使用浏览器内置的HTML表单验证和在后端服务器上进行数据验证）。 
+
+> `警告`
+>
+> 此功能仅在使用数据路由器时有效，请参阅[选择路由器](https://reactrouter.com/en/main/routers/picking-a-router)
+
+````react
+import { Form } from "react-router-dom";
+
+function NewEvent() {
+  return (
+    <Form method="post" action="/events">
+      <input type="text" name="title" />
+      <input type="text" name="description" />
+      <button type="submit">Create</button>
+    </Form>
+  );
+}
+````
+
+> **提示**
+>
+> 确保您的输入有名称，否则将`FormData`不包含该字段的值。 
+
+所有这些都会触发状态更新到任何已呈现的useNavigation钩子，因此您可以在异步操作飞行期间构建挂起指示器和乐观UI。
+
+如果表单感觉不像导航，则可能需要使用useFetcher。
+
+### action 
+
+表单将提交到的URL，就像HTML表单操作一样。唯一的区别是默认操作。对于HTML表单，默认为完整URL。对于<Form>，默认为上下文中最近路由的相对URL。 
+
+考虑以下路由和组件：
+
+ ````react
+function ProjectsLayout() {
+  return (
+    <>
+      <Form method="post" />
+      <Outlet />
+    </>
+  );
+}
+
+function ProjectsPage() {
+  return <Form method="post" />;
+}
+
+<DataBrowserRouter>
+  <Route
+    path="/projects"
+    element={<ProjectsLayout />}
+    action={ProjectsLayout.action}
+  >
+    <Route
+      path=":projectId"
+      element={<ProjectsPage />}
+      action={ProjectsPage.action}
+    />
+  </Route>
+</DataBrowserRouter>;
+ ````
+
+如果当前URL为“/projects/123”，则子路由ProjectsPage中的表单将具有默认操作，正如您所期望的那样：“/projects/123”。在这种情况下，当路由是最深匹配路由时，<Form>和普通HTML表单具有相同的结果。 
+
+但是，ProjectsLayout中的表单将指向“/projects”，而不是完整URL。换句话说，它指向呈现表单的路由的匹配片段的URL。 
+
+这有助于可移植性以及当您在路由模块中添加一些约定时，表单及其操作处理程序的协作定位。 
+
+如果您需要发布到不同的路由，则添加一个action属性： 
+
+````
+<Form action="/projects/new" method="post" />
+````
+
+**See also:** 
+
+- [Index Search Param](https://reactrouter.com/en/main/guides/index-search-param)（索引vs父路由消歧）
+
+### method
+
+这决定了要使用的[HTTP 动词。](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods)[与纯 HTML表单方法](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form#attr-method)相同，除了它还支持“get”和“post”之外的“put”、“patch”和“delete”。默认值为“获取”。
+
+### 获取提交
+
+ 默认方法是“get”。获取提交不会调用操作。获取提交与正常导航相同（用户单击链接），只是用户可以提供进入表单的搜索参数。 
+
+````
+<Form method="get" action="/products">
+  <input
+    aria-label="search products"
+    type="text"
+    name="q"
+  />
+  <button type="submit">Search</button>
+</Form>
+
+````
+
+假设用户键入“跑步鞋”并提交表单。React Router模拟浏览器，将表单序列化为URLSearchParams，然后将用户导航到“/products?q=running+shoes”。就像作为开发人员呈现<Link to="/products?q=running+shoes">一样，但是你让用户动态提供查询字符串。 
+
+您的路由加载器可以通过从request.url创建新URL，然后加载数据来最方便地访问这些值。 
+
+```
+<Route
+  path="/products"
+  loader={async ({ request }) => {
+    let url = new URL(request.url);
+    let searchTerm = url.searchParams.get("q");
+    return fakeSearchProducts(searchTerm);
+  }}
+/>
+```
+
+### 变异提交 
+
+所有其他方法都是“变异提交”，这意味着您打算使用POST、PUT、PATCH或DELETE更改数据的某些内容。请注意，普通HTML表单仅支持“post”和“get”，我们也倾向于使用这两个。 
+
+当用户提交表单时，React Router将匹配操作到应用程序的路由，并使用序列化的FormData调用<Route action>。当操作完成时，页面上的所有加载器数据都将自动重新验证，以使您的UI与数据同步。 
+
+方法将在调用的路由操作的request.method内可用。您可以使用它来指示数据抽象有关提交意图的信息。 
+
+````
+<Route
+  path="/projects/:id"
+  element={<Project />}
+  loader={async ({ params }) => {
+    return fakeLoadProject(params.id);
+  }}
+  action={async ({ request, params }) => {
+    switch (request.method) {
+      case "PUT": {
+        let formData = await request.formData();
+        let name = formData.get("projectName");
+        return fakeUpdateProject(name);
+      }
+      case "DELETE": {
+        return fakeDeleteProject(params.id);
+      }
+      default: {
+        throw new Response("", { status: 405 });
+      }
+    }
+  }}
+/>;
+
+function Project() {
+  let project = useLoaderData();
+
+  return (
+    <>
+      <Form method="put">
+        <input
+          type="text"
+          name="projectName"
+          defaultValue={project.name}
+        />
+        <button type="submit">Update Project</button>
+      </Form>
+
+      <Form method="delete">
+        <button type="submit">Delete Project</button>
+      </Form>
+    </>
+  );
+}
+````
+
+正如您所看到的，两个表单都提交到同一路由，但是您可以使用request.method分支来决定要执行的操作。操作完成后，加载器将被重新验证，UI将自动与新数据同步。 
+
+### replace 
+
+指示表单替换历史堆栈中的当前条目，而不是推送新条目。 
+
+````
+<Form replace />
+````
+
+默认行为取决于表单行为：
+
+- `method=get`表格默认为`false`
+
+- 提交方法取决于
+
+  ```
+  formAction
+  ```
+
+  和
+
+  ```
+  action
+  ```
+
+  行为：
+
+  - 如果你`action`抛出，那么它将默认为`false`
+  - 如果您`action`重定向到当前位置，则默认为`true`
+  - 如果您`action`重定向到其他地方，则默认为`false`
+  - 如果您`formAction`是当前位置，则默认为`true`
+  - 否则默认为`false`
+
+  我们发现对于get请求，您通常希望用户能够单击“返回”以查看以前的搜索结果/筛选器等。但是对于其他方法，默认值为true，以避免“您确定要重新提交表单吗？”提示。请注意，即使replace={false}，React Router在单击后退按钮并且方法为post、put、patch或delete时也不会重新提交表单。
+
+  换句话说，这仅对GET提交有用，并且您希望避免后退按钮显示先前的结果。
+
+### relative 
+
+默认情况下，路径相对于路由层次结构，因此..将上升一个路由级别。偶尔，您可能会发现有匹配的URL模式，这些模式在嵌套起来不合理，您可以选择使用相对路径路由。您可以使用<Form to="../some/where" relative="path">选择此行为。 
+
+### reloadDocument 
+
+指示表单跳过React Router，并使用浏览器内置的行为提交表单。 
+
+````
+<Form reloadDocument />
+````
+
+这比使用< form >更好，因此您可以获得默认和相对操作的好处，但否则与普通HTML表单相同。
+
+如果没有像Remix这样的框架，或者您自己的服务器处理路由的帖子，那么这并没有太大用处。
+
+See also:
+
+- [`useNavigation`](https://reactrouter.com/en/main/hooks/use-navigation)
+- [`useActionData`](https://reactrouter.com/en/main/hooks/use-action-data)
+- [`useSubmit`](https://reactrouter.com/en/main/hooks/use-submit)
+
+### preventScrollReset 
+
+如果您正在使用<ScrollRestoration>，则可以使用此选项防止表单操作重定向到新位置时将滚动位置重置为窗口顶部。 
+
+````
+<Form method="post" preventScrollReset={true} />
+````
+
+See also: [`Link preventScrollReset `](https://reactrouter.com/en/main/components/link#preventscrollreset) 
+
+###  Examples
+
+TODO: More examples
+
+### 大型列表过滤 
+
+GET提交的常见用例是过滤大型列表，例如电子商务和旅游预订网站。 
+
+````react
+function FilterForm() {
+  return (
+    <Form method="get" action="/slc/hotels">
+      <select name="sort">
+        <option value="price">Price</option>
+        <option value="stars">Stars</option>
+        <option value="distance">Distance</option>
+      </select>
+
+      <fieldset>
+        <legend>Star Rating</legend>
+        <label>
+          <input type="radio" name="stars" value="5" />{" "}
+          ★★★★★
+        </label>
+        <label>
+          <input type="radio" name="stars" value="4" /> ★★★★
+        </label>
+        <label>
+          <input type="radio" name="stars" value="3" /> ★★★
+        </label>
+        <label>
+          <input type="radio" name="stars" value="2" /> ★★
+        </label>
+        <label>
+          <input type="radio" name="stars" value="1" /> ★
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Amenities</legend>
+        <label>
+          <input
+            type="checkbox"
+            name="amenities"
+            value="pool"
+          />{" "}
+          Pool
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="amenities"
+            value="exercise"
+          />{" "}
+          Exercise Room
+        </label>
+      </fieldset>
+      <button type="submit">Search</button>
+    </Form>
+  );
+}
+````
+
+当用户提交此表单时，表单将序列化为URL，具体取决于用户的选择，例如： 
+
+`````
+/slc/hotels?sort=price&stars=4&amenities=pool&amenities=exercise
+`````
+
+您可以从访问这些值`request.url` 
+
+```
+<Route
+  path="/:city/hotels"
+  loader={async ({ request }) => {
+    let url = new URL(request.url);
+    let sort = url.searchParams.get("sort");
+    let stars = url.searchParams.get("stars");
+    let amenities = url.searchParams.getAll("amenities");
+    return fakeGetHotels({ sort, stars, amenities });
+  }}
+/>
+```
+
+**See also:**
+
+- [useSubmit](https://reactrouter.com/en/main/hooks/use-submit)
+
+## Link
+
+> **提示**
+>
+> 这是 的网络版本`<Link>`。对于 React Native 版本，[请转到此处](https://reactrouter.com/en/main/components/link-native)。 
+
+> **类型声明**
+>
+> ```ts
+> declare function Link(props: LinkProps): React.ReactElement;
+> 
+> interface LinkProps
+>   extends Omit<
+>     React.AnchorHTMLAttributes<HTMLAnchorElement>,
+>     "href"
+>   > {
+>   replace?: boolean;
+>   state?: any;
+>   to: To;
+>   reloadDocument?: boolean;
+>   preventScrollReset?: boolean;
+>   relative?: "route" | "path";
+> }
+> 
+> type To = string | Partial<Path>;
+> 
+> interface Path {
+>   pathname: string;
+>   search: string;
+>   hash: string;
+> }
+> ```
+
+<Link>是一个元素，允许用户通过单击或轻触它来导航到另一页。在react-router-dom中，<Link>呈现可访问的<a>元素，具有指向其链接资源的真实href。这意味着像右键单击<Link>这样的事情将按您所期望的方式工作。您可以使用<Link reloadDocument>来跳过客户端路由，并让浏览器正常处理过渡（就像它是一个<a href>）。 
+
+````react
+
+````
+
+相对的<Link to>值（不以/开头）相对于父路由解析，这意味着它建立在由呈现该<Link>的路由匹配的URL路径之上。它可能包含..以链接到更高级别的路由。在这些情况下，..的工作方式与命令行cd函数完全相同；每个..都删除一个父路径的段。 
+
+> **提示**
+>
+> 当前URL以/结尾时，<Link to>与普通的<a href>不同。 <Link to>忽略末尾的斜杠，并为每个...删除一个URL段。但是，当当前URL以/结尾时，<a href>值会以与其不以/结尾时不同的方式处理..。 
+
+### relative 
+
+默认情况下，链接相对于路由层次结构，因此..将上升一个路由级别。偶尔，您可能会发现有匹配的URL模式，这些模式在嵌套起来不合理，您可能更喜欢使用相对路径路由。您可以使用relative选项选择此行为： 
+
+````react
+// Contact and EditContact do not share additional UI layout
+<Route path="/" element={<Layout />}>
+  <Route path="contacts/:id" element={<Contact />} />
+  <Route
+    path="contacts/:id/edit"
+    element={<EditContact />}
+  />
+</Route>;
+
+function EditContact() {
+  // Since Contact is not a parent of EditContact we need to go up one level
+  // in the path, instead of one level in the Route hierarchy
+  return (
+    <Link to=".." relative="path">
+      Cancel
+    </Link>
+  );
+}
+````
+
+### preventScrollReset 
+
+如果您正在使用<ScrollRestoration>，则可以使用此选项防止单击链接时将滚动位置重置为窗口顶部。 
+
+````
+<Link to="?tab=one" preventScrollReset={true} />
+````
+
+这不会防止用户使用后退/前进按钮返回位置时恢复滚动位置，它只是在用户单击链接时防止重置。
+
+您可能希望进行此操作的一个示例是，选项卡列表可以操作不在页面顶部的URL搜索参数。您不希望滚动位置跳到顶部，因为它可能会将切换的内容滚动出视口！
+
+```
+      ┌─────────────────────────┐
+      │                         ├──┐
+      │                         │  │
+      │                         │  │ scrolled
+      │                         │  │ out of view
+      │                         │  │
+      │                         │ ◄┘
+    ┌─┴─────────────────────────┴─┐
+    │                             ├─┐
+    │                             │ │ viewport
+    │   ┌─────────────────────┐   │ │
+    │   │  tab   tab   tab    │   │ │
+    │   ├─────────────────────┤   │ │
+    │   │                     │   │ │
+    │   │                     │   │ │
+    │   │ content             │   │ │
+    │   │                     │   │ │
+    │   │                     │   │ │
+    │   └─────────────────────┘   │ │
+    │                             │◄┘
+    └─────────────────────────────┘
+```
+
+###  replace
+
+如果您希望通过[`history.replaceState`](https://developer.mozilla.org/en-US/docs/Web/API/History/replaceState) 替换历史堆栈中的当前条目，而不是默认使用[`history.pushState`](https://developer.mozilla.org/en-US/docs/Web/API/History/pushState)，则可以使用replace属性。 
+
+state 
+
+state属性可用于为存储在历史状态中的新位置设置有状态的值。此值随后可以通过useLocation()访问。 
+
+````
+<Link to="new-path" state={{ some: "value" }} />
+````
+
+您可以在“新路径”路线上访问此状态值： 
+
+````
+let { state } = useLocation();
+````
+
+### reloadDocument
+
+该`reloadDocument`属性可用于跳过客户端路由并让浏览器正常处理转换（就好像它是一个`<a href>`）。
+
+## NavLink
+
+ <NavLink>是<Link>的一种特殊类型，它知道它是否“活动”或“挂起”。这在构建导航菜单时非常有用，例如面包屑或一组选项卡，您想显示当前选定的选项卡。它还为屏幕阅读器等辅助技术提供了有用的上下文。 
+
+````react
+import { NavLink } from "react-router-dom";
+
+<NavLink
+  to="/messages"
+  className={({ isActive, isPending }) =>
+    isPending ? "pending" : isActive ? "active" : ""
+  }
+>
+  Messages
+</NavLink>;
+````
+
+### Default `active`class
+
+默认情况下，当<NavLink>组件处于活动状态时，将添加一个活动类，因此您可以使用CSS对其进行样式设置。 
+
+```react
+<nav id="sidebar">
+  <NavLink to="/messages" />
+</nav>
+
+#sidebar a.active {
+  color: red;
+}
+```
+
+### className
+
+className属性的工作方式类似于普通的className，但您还可以将其传递给一个函数，以根据链接的活动状态和挂起状态自定义应用的classNames。 
+
+`````react
+<NavLink
+  to="/messages"
+  className={({ isActive, isPending }) =>
+    isPending ? "pending" : isActive ? "active" : ""
+  }
+>
+  Messages
+</NavLink>
+`````
+
+### style
+
+style属性的工作方式类似于普通的style属性，但您还可以将其传递给一个函数，以根据链接的活动状态和挂起状态自定义应用的样式。 
+
+````
+<NavLink
+  to="/messages"
+  style={({ isActive, isPending }) => {
+    return {
+      fontWeight: isActive ? "bold" : "",
+      color: isPending ? "red" : "black",
+    };
+  }}
+>
+  Messages
+</NavLink>
+````
+
+### children
+
+您可以将呈现函数作为子传递给<NavLink>以根据活动状态和挂起状态自定义其内容，这对于更改内部元素的样式非常有用。 
+
+````
+<NavLink to="/tasks">
+  {({ isActive, isPending }) => (
+    <span className={isActive ? "active" : ""}>Tasks</span>
+  )}
+</NavLink>
+````
+
+### end
+
+end属性更改了与活动状态和挂起状态匹配的逻辑，只匹配NavLink的to路径的“末尾”。如果URL比to更长，则不再被视为活动。
+
+如果没有end属性，则此链接始终处于活动状态，因为每个URL都与/匹配。
+
+````
+<NavLink to="/">Home</NavLink>
+````
+
+要将URL“匹配到to的末尾”，请使用end： 
+
+````
+<NavLink to="/" end>
+  Home
+</NavLink>
+````
+
+现在，此链接仅在“/”处处于活动状态。对于具有更多片段的路径，此方法同样适用： 
+
+| Link                          | URL          | isActive |
+| ----------------------------- | ------------ | -------- |
+| `<NavLink to="/tasks" />`     | `/tasks`     | true     |
+| `<NavLink to="/tasks" />`     | `/tasks/123` | true     |
+| `<NavLink to="/tasks" end />` | `/tasks`     | true     |
+| `<NavLink to="/tasks" end />` | `/tasks/123` | false    |
+
+### caseSensitive
+
+添加caseSensitive属性会更改匹配逻辑，使其区分大小写。 
+
+| Link                                         | URL           | isActive |
+| -------------------------------------------- | ------------- | -------- |
+| `<NavLink to="/SpOnGe-bOB" />`               | `/sponge-bob` | true     |
+| `<NavLink to="/SpOnGe-bOB" caseSensitive />` | `/sponge-bob` | false    |
+
+### aria-current
+
+当 a`NavLink`处于活动状态时，它将自动应用于`<a aria-current="page">`底层锚标记。请参阅MDN 上的[aria-current](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-current)。 
+
+### reloadDocument
+
+该`reloadDocument`属性可用于跳过客户端路由并让浏览器正常处理转换（就好像它是一个`<a href>`）。
+
+## Navigate
+
+> 类型注释
+>
+> ````ts
+> declare function Navigate(props: NavigateProps): null;
+> 
+> interface NavigateProps {
+>   to: To;
+>   replace?: boolean;
+>   state?: any;
+>   relative?: RelativeRoutingType;
+> }
+> ````
+>
+> 
+
+一个 <Navigate> 元素在呈现时会更改当前位置。它是一个包装在  [`useNavigate`](https://reactrouter.com/en/main/hooks/use-navigate) 周围的组件，接受与 props 相同的所有参数。 
+
+> **提示**
+>
+> 具有基于组件的 useNavigate 钩子版本使得在 React.Component 子类中使用此功能更加容易，因为 hook 无法在类组件中使用。 
+
+````react
+import * as React from "react";
+import { Navigate } from "react-router-dom";
+
+class LoginForm extends React.Component {
+  state = { user: null, error: null };
+
+  async handleSubmit(event) {
+    event.preventDefault();
+    try {
+      let user = await login(event.target);
+      this.setState({ user });
+    } catch (error) {
+      this.setState({ error });
+    }
+  }
+
+  render() {
+    let { user, error } = this.state;
+    return (
+      <div>
+        {error && <p>{error.message}</p>}
+        {user && (
+          <Navigate to="/dashboard" replace={true} />
+        )}
+        <form
+          onSubmit={(event) => this.handleSubmit(event)}
+        >
+          <input type="text" name="username" />
+          <input type="password" name="password" />
+        </form>
+      </div>
+    );
+  }
+}
+````
+
+## Outlet
+
+> 类型注释
+>
+> ````react
+> interface OutletProps {
+>   context?: unknown;
+> }
+> declare function Outlet(
+>   props: OutletProps
+> ): React.ReactElement | null;
+> ````
+>
+> 
+
+应该在父路由元素中使用 <Outlet> 来呈现其子路由元素。这允许在呈现子路由时显示嵌套 UI。如果父路由完全匹配，则它将呈现子索引路由，如果没有索引路由，则不呈现任何内容。 
+
+````react
+function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+
+      {/* This element will render either <DashboardMessages> when the URL is
+          "/messages", <DashboardTasks> at "/tasks", or null if it is "/"
+      */}
+      <Outlet />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Dashboard />}>
+        <Route
+          path="messages"
+          element={<DashboardMessages />}
+        />
+        <Route path="tasks" element={<DashboardTasks />} />
+      </Route>
+    </Routes>
+  );
+}
+````
+
+## Route APIs
+
+由于<Route/>的 API 和使用案例包括数据加载、变异等，因此<Route>具有自己的文档类别。
+
+请参阅：
+
+- [`route`](https://reactrouter.com/en/main/route/route)
+- [`loader`](https://reactrouter.com/en/main/route/loader)
+- [`action`](https://reactrouter.com/en/main/route/action)
+- [`errorElement`](https://reactrouter.com/en/main/route/error-element)
+- [`shouldRevalidate`](https://reactrouter.com/en/main/route/should-revalidate)
+
+## Routes
+
+无论在应用程序中的哪个地方呈现，<Routes>都将匹配当前位置的一组子路由。 
+
+```
+interface RoutesProps {
+  children?: React.ReactNode;
+  location?: Partial<Location> | string;
+}
+
+<Routes location>
+  <Route />
+</Routes>;
+```
+
+> **提示**
+>
+> 如果您正在使用像createBrowserRouter这样的数据路由器，则不常使用此组件，因为作为后代<Routes>树的一部分定义的路由无法利用RouterProvider应用程序可用的数据API。 在迁移期间，您可以并且应该在RouterProvider应用程序中使用此组件。 
+
+每当位置更改时，<Routes>都会查找其所有子路由以找到最佳匹配并呈现该分支的 UI。 <Route>元素可以嵌套以指示嵌套UI，这也对应于嵌套的URL路径。父级路由通过呈现<Outlet>来呈现其子路由。 
+
+````
+<Routes>
+  <Route path="/" element={<Dashboard />}>
+    <Route
+      path="messages"
+      element={<DashboardMessages />}
+    />
+    <Route path="tasks" element={<DashboardTasks />} />
+  </Route>
+  <Route path="about" element={<AboutPage />} />
+</Routes>
+
+````
+
+## `<ScrollRestoration />`
+
+此组件将在加载程序完成后模拟浏览器的滚动恢复功能，以确保滚动位置恢复到正确的位置，甚至跨越域名。 
+
+> `警告`
+>
+> 此功能仅在使用数据路由器时有效，请参阅[选择路由器](https://reactrouter.com/en/main/routers/picking-a-router) 
+
+您应该只渲染其中之一，建议您在应用程序的根路径中渲染它： 
+
+````react
+import { ScrollRestoration } from "react-router-dom";
+
+function RootRouteComponent() {
+  return (
+    <div>
+      {/* ... */}
+      <ScrollRestoration />
+    </div>
+  );
+}
+````
+
+### getKey
+
+可选属性，定义React Router应该使用的键来恢复滚动位置 .
+
+````
+<ScrollRestoration
+  getKey={(location, matches) => {
+    // default behavior
+    return location.key;
+  }}
+/>
+````
+
+默认情况下，它使用location.key，模拟浏览器的默认行为，而不使用客户端端路由。用户可以多次在堆栈中导航到相同的URL，每个条目都有自己的滚动位置要恢复。
+
+一些应用程序可能希望覆盖此行为并基于其他内容恢复位置。考虑一个具有四个主要页面的社交应用程序：
+
+> - "/home"
+> - "/messages"
+> - "/notifications"
+> - "/search"
+
+如果用户从“/home”开始，向下滚动一点，然后在导航菜单中单击“消息”，然后在导航菜单中单击“主页”（不是后退按钮！），则历史堆栈中将有三个条目： 
+
+> ```
+> 1. /home
+> 2. /messages
+> 3. /home
+> ```
+
+默认情况下，React Router（和浏览器）将为1和3存储两个不同的滚动位置，即使它们具有相同的URL。这意味着当用户从2 → 3导航时，滚动位置返回到顶部，而不是恢复到1中的位置。 
+
+在这里做出一个明智的产品决策是无论用户如何到达主页，都保留其滚动位置（后退按钮或新链接单击）。为此，您需要使用location.pathname作为键。 
+
+```
+<ScrollRestoration
+  getKey={(location, matches) => {
+    return location.pathname;
+  }}
+/>
+```
+
+或者，您可能只想对某些路径使用路径名，对其他所有内容使用正常行为： 
+
+`````
+<ScrollRestoration
+  getKey={(location, matches) => {
+    const paths = ["/home", "/notifications"];
+    return paths.includes(location.pathname)
+      ? // home and notifications restore by pathname
+        location.pathname
+      : // everything else by location like the browser
+        location.key;
+  }}
+/>
+`````
+
+当导航创建新的滚动键时，滚动位置将重置为页面顶部。您可以防止您的链接和表单产生“滚动到顶部”的行为： 
+
+```
+<Link preventScrollReset={true} />
+<Form preventScrollReset={true} />
+```
+
+See also: [`Link preventScrollReset`](https://reactrouter.com/en/main/components/link#preventscrollreset), [`Form preventScrollReset`](https://reactrouter.com/en/main/components/form#preventscrollreset) 
+
+### 滚动闪烁 
+
+如果没有像Remix这样的服务器端渲染框架，您可能会在初始页面加载时遇到一些滚动闪烁问题。这是因为React Router无法恢复滚动位置，直到JS捆绑包已下载、数据已加载且完整页面已呈现（如果您正在呈现旋转器，则视口可能不是保存滚动位置时的大小）。
+
+服务器端渲染框架可以防止滚动闪烁，因为它们可以在初始加载时发送完整的文档，因此可以在页面首次呈现时恢复滚动。
