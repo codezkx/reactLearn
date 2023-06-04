@@ -7,7 +7,7 @@ const RouterLink = () => {
       <div style={{
         height: '1000px',
       }}></div>
-      <Link a
+      <Link 
         to='/await'
         relative='path'
         preventScrollReset={true}
