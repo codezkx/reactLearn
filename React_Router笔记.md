@@ -2026,8 +2026,8 @@ function Book() {
 
 当使用函数时，值作为唯一参数提供。
 
-````
-<Await resolve={reviewsPromise}>
+````react
+<Await resolve={reviewsPromise}>  // reviewsPromise 是resolve的promise的返回值
   {(resolvedReviews) => <Reviews items={resolvedReviews} />}
 </Await>
 ````
@@ -2040,7 +2040,7 @@ function Book() {
 </Await>;
 
 function Reviews() {
-  const resolvedReviews = useAsyncValue();
+  const resolvedReviews = useAsyncValue(); // Await resolve属性的promise resolve的返回值 可返回JSX
   return <div>{/* ... */}</div>;
 }
 ````
@@ -2051,7 +2051,7 @@ function Reviews() {
 
 如果Promise被拒绝，您可以使用useAsyncError钩子提供可选的errorElement，以在上下文UI中处理错误。
 
-```
+```react
 <Await
   resolve={reviewsPromise}
   errorElement={<ReviewsError />}
@@ -2060,7 +2060,7 @@ function Reviews() {
 </Await>;
 
 function ReviewsError() {
-  const error = useAsyncError();
+  const error = useAsyncError();  // Await resolve属性的promise reject的返回值。 可返回JSX
   return <div>{error.message}</div>;
 }
 ```
@@ -2083,8 +2083,8 @@ import {
 <Route
   loader={async () => {
     let book = await getBook();
-    let reviews = getReviews(); // not awaited
-    return defer({
+    let reviews = getReviews(); // 不等待
+    return defer({ // 当数据加载很慢时，通读https://reactrouter.com/en/main/guides/deferred
       book,
       reviews, // this is a promise
     });

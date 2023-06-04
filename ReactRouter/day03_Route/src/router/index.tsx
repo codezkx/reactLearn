@@ -5,11 +5,13 @@ import {
 import {
   Root,
   Team,
-} from './components'
+  RouterAwait,
+} from './components.ts'
 
 import {
-  loaderRoot
-} from './loaders'
+  loaderRoot,
+  loaderAwait,
+} from './loaders.ts'
 
 const routes = [
   {
@@ -20,7 +22,11 @@ const routes = [
       {
         path: 'team',
         element: <Team />,
-        
+      },
+      {
+        path: 'await',
+        element: <RouterAwait />,
+        loader: loaderAwait,
       }
     ],
   },
