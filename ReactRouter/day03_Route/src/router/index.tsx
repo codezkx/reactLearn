@@ -6,6 +6,7 @@ import {
   Root,
   Team,
   RouterAwait,
+  RouterLink,
 } from './components.ts'
 
 import {
@@ -27,6 +28,10 @@ const routes = [
         path: 'await',
         element: <RouterAwait />,
         loader: loaderAwait,
+      },
+      {
+        path: 'link',
+        element: <RouterLink />,
       }
     ],
   },

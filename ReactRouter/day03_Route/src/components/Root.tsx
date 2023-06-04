@@ -14,13 +14,18 @@ const Root = () => {
           navigation('/await');
         }} 
         >go to Await component</h1>
+      <h1
+        onClick={() => {
+          navigation('/link');
+        }} 
+        >go to Link component</h1>
       <Outlet />
     </>
   )
 }
 
 export const loader: LoaderFunction = (params) => {
-  return ''
+  return params
 }
 
 export default Root

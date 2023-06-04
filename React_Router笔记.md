@@ -1971,6 +1971,16 @@ interface ShouldRevalidateFunction {
 
 ## Await
 
+> Await组件是React Router中的一个特殊组件,它的作用是等待一个Promise完成后才会渲染其子组件。
+>
+> 当路由匹配时,Await组件会被渲染。然后它会等待你提供的Promise完成,一旦Promise完成,它就会渲染它的子组件。
+>
+> 这个功能很有用,可以让你在渲染路由组件之前先完成一些异步操作,例如:
+>
+> - 加载数据
+> - 验证用户
+> - 任何返回Promise的异步操作
+
 用于呈现带有自动错误处理的[deferred](https://reactrouter.com/en/main/utils/defer)  值。请确保查看[延迟数据指南](https://reactrouter.com/en/main/guides/deferred) ，因为有一些API与此组件一起使用。 
 
 ````react
@@ -2071,47 +2081,91 @@ function ReviewsError() {
 
 接受从延迟加载器值返回的Promise，以便解析和呈现。 
 
-````react
-import {
-  defer,
-  Route,
+````react + ts
+import { Suspense } from 'react';
+import { 
+  Await, 
   useLoaderData,
-  Await,
-} from "react-router-dom";
+  useAsyncValue,
+  useAsyncError,
+  defer,
+ } from 'react-router-dom';
 
-// given this route
-<Route
-  loader={async () => {
-    let book = await getBook();
-    let reviews = getReviews(); // 不等待
-    return defer({ // 当数据加载很慢时，通读https://reactrouter.com/en/main/guides/deferred
-      book,
-      reviews, // this is a promise
-    });
-  }}
-  element={<Book />}
-/>;
+ import type React from 'react';
+ import type { LoaderFunction }  from 'react-router-dom';
 
-function Book() {
-  const {
-    book,
-    reviews, // this is the same promise
-  } = useLoaderData();
+ const getReviews = () => {
+  const promise = new Promise((resolve) => {
+    resolve(true);
+  })
+    .then(() => ({
+      code: 200,
+      message: '学习历史，了解人文。增长知识，开放视野。'
+    }))
+    .catch(() => ({
+      code: 400,
+      message: '结果出错误'
+    }));
+  return promise
+}
+
+const bookData = () => ({
+  book: {
+    title: '中国通史',
+    description: '描述中国历史长河记录片2',
+  },
+  reviews: getReviews(),
+})
+
+type BookOption = ReturnType<typeof bookData> 
+
+export const loader: LoaderFunction = (params) => {
+  console.log(params)
+  return defer(bookData()) // 当数据加载很慢时
+}
+
+type items = any
+type ReviewsOption = {
+  code: number;
+  message: string;
+}
+
+const Reviews: React.FC<items> = () => {
+  const resolvedReviews = useAsyncValue() as ReviewsOption; // 从最近的祖先组件返回已解析的数据
+  if (resolvedReviews.code !== 200) {
+    throw resolvedReviews
+  }
   return (
     <div>
-      <h1>{book.title}</h1>
-      <p>{book.description}</p>
-      <React.Suspense fallback={<ReviewsSkeleton />}>
-        <Await
-          // and is the promise we pass to Await
-          resolve={reviews}
-        >
-          <Reviews />
-        </Await>
-      </React.Suspense>
+      { resolvedReviews.message }  {/* // 描述中国历史长河记录片  */}
     </div>
   );
 }
+
+const ReviewsError = () => {
+  const error = useAsyncError() as ReviewsOption;
+  console.log(error, 'error');
+  return <div>{ error.message }</div>
+}
+
+const RouterAwait = () => {
+  const { book, reviews } = useLoaderData() as BookOption;
+  return (
+    <div>
+      <h1>{ book.title }</h1>
+      <p>{book.description}</p>
+      <Suspense fallback='loading...'>
+        <Await
+          resolve={reviews}  // 接受从延迟加载器值返回的Promise，以便解析和呈现。
+          errorElement={ <ReviewsError/> }>
+          { (resolvedReviews) => <Reviews items={resolvedReviews} /> }
+        </Await>
+      </Suspense>
+    </div>
+  )
+}
+
+export default RouterAwait
 ````
 
 ## Form 
