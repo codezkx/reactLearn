@@ -6,19 +6,33 @@ const Root = () => {
   const navigation = useNavigate();
   return (
     <>
-      <h1 onClick={() => {
+      <h3 onClick={() => {
         navigation('/team');
-      }}>我是顶级路由</h1>
-      <h1
+        }}
+      >
+        我是顶级路由
+      </h3>
+      <h3
         onClick={() => {
           navigation('/await');
         }} 
-        >go to Await component</h1>
-      <h1
+        >
+        go to Await component
+      </h3>
+      <h3
         onClick={() => {
           navigation('/link');
         }} 
-        >go to Link component</h1>
+        >
+        go to Link component
+      </h3>
+      <h3
+        onClick={() => {
+          navigation('/link');
+        }} 
+        >
+        go to useActionData
+      </h3>
       <Outlet />
     </>
   )

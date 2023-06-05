@@ -7,12 +7,17 @@ import {
   Team,
   RouterAwait,
   RouterLink,
-} from './components.ts'
+  RouterActionData,
+} from './components.ts';
 
 import {
   loaderRoot,
   loaderAwait,
-} from './loaders.ts'
+} from './loaders.ts';
+
+import {
+  ActionData,
+} from './action.ts';
 
 const routes = [
   {
@@ -32,6 +37,11 @@ const routes = [
       {
         path: 'link',
         element: <RouterLink />,
+      },
+      {
+        path: 'action/data',
+        element: <RouterActionData />,
+        action: ActionData,
       }
     ],
   },
