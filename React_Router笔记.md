@@ -2,9 +2,9 @@
 
 ## createBrowserRouter
 
-> 这是所有React Router Web项目推荐的路由器。它使用DOM History API来更新URL并管理历史记录堆栈。
+> **这是所有React Router Web项目推荐的路由器。它使用DOM History API来更新URL并管理历史记录堆栈。**
 >
-> 它还启用了v6.4数据API，如加载器(loaders)、动作(actions)、获取器(fetchers)等。
+> **它还启用了v6.4数据API，如加载**器(loaders)、动作(actions)、获取器(fetchers)等。
 
 ````react
 import * as React from "react";
@@ -2158,7 +2158,7 @@ const RouterAwait = () => {
         <Await
           resolve={reviews}  // 接受从延迟加载器值返回的Promise，以便解析和呈现。
           errorElement={ <ReviewsError/> }>
-          { (resolvedReviews) => <Reviews items={resolvedReviews} /> }
+          { (resolvedReviews) => <Reviews items={resolvedReviews} /> } // resolvedReviews 就是 reviews
         </Await>
       </Suspense>
     </div>

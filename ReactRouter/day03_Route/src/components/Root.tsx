@@ -28,10 +28,17 @@ const Root = () => {
       </h3>
       <h3
         onClick={() => {
-          navigation('/link');
+          navigation('/action/data');
         }} 
         >
         go to useActionData
+      </h3>
+      <h3
+        onClick={() => {
+          navigation('/before/unload');
+        }} 
+        >
+        go to useBeforeUnload
       </h3>
       <Outlet />
     </>

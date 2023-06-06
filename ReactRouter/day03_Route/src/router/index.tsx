@@ -8,6 +8,7 @@ import {
   RouterAwait,
   RouterLink,
   RouterActionData,
+  RouterBeforeUnload,
 } from './components.ts';
 
 import {
@@ -41,6 +42,11 @@ const routes = [
       {
         path: 'action/data',
         element: <RouterActionData />,
+        action: ActionData,
+      },
+      {
+        path: 'before/unload',
+        element: <RouterBeforeUnload />,
         action: ActionData,
       }
     ],
