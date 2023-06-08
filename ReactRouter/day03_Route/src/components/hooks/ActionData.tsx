@@ -39,16 +39,15 @@ export const action: ActionFunction = async ({request}) => {
 
 const RouterActionData = () => {
 	const errors = useActionData() as ErrorsOption;
-
 	return (
 		<Form method='post'>
 			<p>
 				<input type="text" name="email" />
-				{errors?.email && <span style={{ color: 'red', paddingLeft: '16px'}}>{errors.email}</span>}
+				{errors?.email && <span style={{color: 'red', paddingLeft: '16px'}}>{errors.email}</span>}
 			</p>
 			<p>
 				<input type="text" name="password" />
-				{errors?.password && <span style={{ color: 'red',  paddingLeft: '16px'}}>{errors.password}</span>}
+				{errors?.password && <span style={{color: 'red',  paddingLeft: '16px'}}>{errors.password}</span>}
      		</p>
 			<p>
 				<button type="submit">Sign up</button>

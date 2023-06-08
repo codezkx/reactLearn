@@ -9,6 +9,7 @@ import {
   RouterLink,
   RouterActionData,
   RouterBeforeUnload,
+  RouterFetcher,
 } from './components.ts';
 
 import {
@@ -48,7 +49,12 @@ const routes = [
         path: 'before/unload',
         element: <RouterBeforeUnload />,
         action: ActionData,
-      }
+      },
+      {
+        path: 'fetcher',
+        element: <RouterFetcher />,
+        action: ActionData,
+      },
     ],
   },
 ]
