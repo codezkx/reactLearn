@@ -1,6 +1,8 @@
 import { 
     // useBeforeUnload,
     Form,
+    useNavigate,
+    Outlet,
 } from 'react-router-dom';
 import { 
     useState,
@@ -8,10 +10,12 @@ import {
     useEffect,
 } from 'react';
 
+const _id = '619';
 
 const RouterBeforeUnload = () => {
     const [state, setState] = useState('');
-    const a = useBeforeUnload( // 卸载页面时 触发该钩子
+    const navigation = useNavigate()
+    useBeforeUnload( // 卸载页面时 触发该钩子
         useCallback(() => {
             localStorage.stuff = state
         }, [state])
@@ -24,7 +28,8 @@ const RouterBeforeUnload = () => {
     }, [state]);
 
     return (
-        <Form method='post'>
+        <Form
+            method='post'>
             <label htmlFor='beforeUnload'>useBeforeUnload</label>
             <input
                 value={state}
@@ -35,6 +40,8 @@ const RouterBeforeUnload = () => {
                     setState(text)
                 } }
             />
+            <button onClick={() => navigation(`/fetcher/user/${_id}`)} >创建user</button>
+            <Outlet />
         </Form>
     )
 }

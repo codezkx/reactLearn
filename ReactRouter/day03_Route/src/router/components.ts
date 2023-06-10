@@ -4,7 +4,11 @@ import RouterAwait from '@/components/RouterAwait.tsx';
 import RouterLink from '@/components/RouterLink.tsx';
 import RouterActionData from '@/components/hooks/ActionData.tsx';
 import RouterBeforeUnload from '@/components/hooks/RouterBeforeUnload.tsx'
-import RouterFetcher from '@/components/hooks/RouterFetcher.tsx';
+import {
+  RouterFetcher,
+  User,
+  Posts,
+} from '@/components/hooks/RouterFetcher.tsx';
 
 export {
   Root,
@@ -14,5 +18,7 @@ export {
   RouterActionData,
   RouterBeforeUnload,
   RouterFetcher,
+  User,
+  Posts,
 }
 

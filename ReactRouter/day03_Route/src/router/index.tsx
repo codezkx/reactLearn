@@ -10,6 +10,8 @@ import {
   RouterActionData,
   RouterBeforeUnload,
   RouterFetcher,
+  User,
+  Posts,
 } from './components.ts';
 
 import {
@@ -53,6 +55,16 @@ const routes = [
       {
         path: 'fetcher',
         element: <RouterFetcher />,
+        children: [
+          {
+            path: 'user/:id',
+            element: <User />,
+          },
+          {
+            path: 'user/:useId/posts',
+            element: <Posts />,
+          },
+        ],
       },
     ],
   },

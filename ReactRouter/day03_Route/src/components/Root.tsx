@@ -44,7 +44,7 @@ const Root = () => {
         onClick={() => {
           navigation('/fetcher');
         }} 
-        >
+      >
         go to useFetcher
       </h3>
       <Outlet />
