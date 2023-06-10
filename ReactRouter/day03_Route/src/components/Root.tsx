@@ -40,6 +40,13 @@ const Root = () => {
         >
         go to useBeforeUnload
       </h3>
+      <h3
+        onClick={() => {
+          navigation('/fetcher');
+        }} 
+        >
+        go to useFetcher
+      </h3>
       <Outlet />
     </>
   )
