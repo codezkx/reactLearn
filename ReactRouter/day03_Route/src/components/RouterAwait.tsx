@@ -36,7 +36,6 @@ const bookData = () => ({
 type BookOption = ReturnType<typeof bookData> 
 
 export const loader: LoaderFunction = (params) => {
-  console.log(params)
   return defer(bookData()) // 当数据加载很慢时
 }
 
@@ -60,7 +59,6 @@ const Reviews: React.FC<items> = () => {
 
 const ReviewsError = () => {
   const error = useAsyncError() as ReviewsOption;
-  console.log(error, 'error');
   return <div>{ error.message }</div>
 }
 

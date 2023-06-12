@@ -1,8 +1,6 @@
 import { 
-    // useBeforeUnload,
+    useBeforeUnload,
     Form,
-    useNavigate,
-    Outlet,
 } from 'react-router-dom';
 import { 
     useState,
@@ -10,21 +8,19 @@ import {
     useEffect,
 } from 'react';
 
-const _id = '619';
-
 const RouterBeforeUnload = () => {
     const [state, setState] = useState('');
-    const navigation = useNavigate()
     useBeforeUnload( // 卸载页面时 触发该钩子
         useCallback(() => {
             localStorage.stuff = state
         }, [state])
     );
-
     useEffect(() => {
         if (!state && localStorage.stuff) {
             setState(localStorage.stuff);
         }
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+
     }, [state]);
 
     return (
@@ -40,8 +36,6 @@ const RouterBeforeUnload = () => {
                     setState(text)
                 } }
             />
-            <button onClick={() => navigation(`/fetcher/user/${_id}`)} >创建user</button>
-            <Outlet />
         </Form>
     )
 }
@@ -57,18 +51,18 @@ const RouterBeforeUnload = () => {
         返回清理函数,用来在卸载组件时移除事件监听器
 
 */
-const useBeforeUnload = (callback: (event: BeforeUnloadEvent) => any) => {
-    useEffect(() => {
-        const onBeforeUnloadListener = (event: BeforeUnloadEvent) => {
-            event.preventDefault();
-            callback(event);
-        }
-        window.addEventListener('beforeunload', onBeforeUnloadListener);
-        return () => {
-            window.removeEventListener('beforeunload', onBeforeUnloadListener);
-        };
-    }, [callback]);
-}
+// const useBeforeUnload = (callback: (event: BeforeUnloadEvent) => any) => {
+//     useEffect(() => {
+//         const onBeforeUnloadListener = (event: BeforeUnloadEvent) => {
+//             event.preventDefault();
+//             callback(event);
+//         }
+//         window.addEventListener('beforeunload', onBeforeUnloadListener);
+//         return () => {
+//             window.removeEventListener('beforeunload', onBeforeUnloadListener);
+//         };
+//     }, [callback]);
+// }
 
 export default RouterBeforeUnload
 

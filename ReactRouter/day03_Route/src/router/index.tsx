@@ -10,13 +10,17 @@ import {
   RouterActionData,
   RouterBeforeUnload,
   RouterFetcher,
-  User,
-  Posts,
+  RouterContext,
+  RouterLinkClickHandler,
+  RouterLoaderData,
+  RouterMatch,
+  RouterMatches,
 } from './components.ts';
 
 import {
   loaderRoot,
   loaderAwait,
+  loaderData
 } from './loaders.ts';
 
 import {
@@ -55,16 +59,36 @@ const routes = [
       {
         path: 'fetcher',
         element: <RouterFetcher />,
-        children: [
-          {
-            path: 'user/:id',
-            element: <User />,
-          },
-          {
-            path: 'user/:useId/posts',
-            element: <Posts />,
-          },
-        ],
+        key: 'fetcher',
+      },
+      {
+        path: 'context',
+        element: <RouterContext />,
+        key: 'context',
+      },
+      {
+        path: 'link',
+        element: <RouterLinkClickHandler />,
+        key: 'link',
+      },
+      {
+        path: 'loader/data/:id',
+        element: <RouterLoaderData />,
+        key: 'loaderData',
+        loader: loaderData,
+      },
+      {
+        path: 'match/:id',
+        element: <RouterMatch />,
+        key: 'match',
+      },
+      {
+        path: 'matches/:id',
+        element: <RouterMatches />,
+        key: 'matches',
+        handle: {
+          crumb: (data) => <span>{data.threadName}</span>
+        }
       },
     ],
   },
