@@ -82,7 +82,21 @@ const Root = () => {
       >
         go to useMatches
       </h3>
-      <Outlet />
+      <h3
+        onClick={() => {
+          navigation('/navigation/123');
+        }} 
+      >
+        go to useNavigation
+      </h3>
+      <h3
+        onClick={() => {
+          navigation('/outlet/context/123');
+        }} 
+      >
+        go to useOutletContext
+      </h3>
+      <Outlet context='我是Outlet组件' />
     </>
   )
 }

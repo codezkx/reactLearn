@@ -10,6 +10,8 @@ import RouterLinkClickHandler from '@/components/hooks/RouterLinkClickHandler.ts
 import RouterLoaderData from '@/components/hooks/RouterLoaderData.tsx';
 import RouterMatch from '@/components/hooks/RouterMatch.tsx';
 import RouterMatches from '@/components/hooks/RouterMatches.tsx';
+import RouterNavigation from '@/components/hooks/RouterNavigation.tsx';
+import RouterOutletContext from '@/components/hooks/RouterOutletContext.tsx';
 
 
 export {
@@ -25,5 +27,7 @@ export {
   RouterLoaderData,
   RouterMatch,
   RouterMatches,
+  RouterNavigation,
+  RouterOutletContext,
 }
 

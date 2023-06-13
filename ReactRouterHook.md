@@ -78,7 +78,7 @@
 >````
 >
 
-## [useFetcher ](https://reactrouter.com/en/main/hooks/use-fetcher)
+## [useFetcher ](https://reactrouter.com/en/main/hooks/use-fetcher)(v6)
 
 >> 在 HTML/HTTP 中，使用导航模型来建模数据的变化和加载：使用 <a href> 和 <form action>。这两种方式都会导致浏览器的导航。React Router 的等价物是 <Link> 和 <Form>。
 >
@@ -295,7 +295,7 @@
 >
 >> fetcher.formMethod 字段在未来的 v7_normalizeFormMethod 未来标志下是小写的。为了与 v7 中 fetch() 的行为保持一致，它正在被规范化为大写。因此，请升级您的 React Router v6 应用程序以采用大写的 HTTP 方法。
 
-## useFormAction
+## useFormAction(v6)
 
 **类型注释**
 
@@ -480,7 +480,7 @@ function Link({
 }
 ```
 
-## [useLoaderData](https://reactrouter.com/en/main/hooks/use-loader-data)
+## [useLoaderData](https://reactrouter.com/en/main/hooks/use-loader-data)(v6)
 
 这个钩子提供了从您的路由加载器返回的值。
 
@@ -558,7 +558,7 @@ function MyComponent() {
 
 See [`matchPath`](https://reactrouter.com/en/main/utils/match-path) for more information.
 
-## [useMatches ](https://reactrouter.com/en/main/hooks/use-matches)
+## [useMatches ](https://reactrouter.com/en/main/hooks/use-matches)(v6)
 
 `useRoutes` 返回页面上当前路由匹配的结果。这对于在父级布局中创建抽象组件来访问其子路由的数据非常有用。
 
@@ -730,37 +730,243 @@ interface NavigateFunction {
 
 如果使用 `replace: true`，则导航将替换历史记录栈中的当前条目而不是添加一个新条目。
 
+## [useNavigation ](https://reactrouter.com/en/main/hooks/use-navigation)(v6)
 
+这个钩子可以告诉您有关页面导航的所有信息，以便在数据变化时构建挂起导航指示器和乐观 UI。例如：
 
+- 全局加载指示器
+- 在执行变更时禁用表单
+- 在提交按钮上添加忙碌指示器
+- 在服务器上创建新记录时，乐观地显示新记录
+- 在更新记录时，乐观地显示记录的新状态
 
+> **警告**
+>
+> 此功能仅在使用数据路由器时有效，请参阅[选择路由器](https://reactrouter.com/en/main/routers/picking-a-router)
 
+````react
+import { useNavigation } from "react-router-dom";
 
+function SomeComponent() {
+  const navigation = useNavigation();
+  navigation.state;
+  navigation.location;
+  navigation.formData;
+  navigation.formAction;
+  navigation.formMethod;
+}
+````
 
+> **警告**
+>
+> 如果未启用 future.v7_normalizeFormMethod 未来标志，则 useNavigation().formMethod 字段为小写。为了与 v7 中 fetch() 的行为保持一致，它将被规范化为大写。因此，请升级您的 React Router v6 应用程序以采用大写的 HTTP 方法。
 
+### navigation.state
 
+- idle - 没有挂起的导航。
+- submitting - 由于使用 POST、PUT、PATCH 或 DELETE 提交表单，正在调用路由动作。
+- loading - 加载器正在被调用以渲染下一页的路由。
 
+正常的导航和 GET 表单提交将通过以下状态进行转换：
 
+> ```react
+> idle → loading → idle
+> ```
 
+使用 POST、PUT、PATCH 或 DELETE 的表单提交将通过以下状态进行转换：
 
+> ```react
+> idle → submitting → loading → idle
+> ```
 
+`navigation.state`在提供活动导航的高级状态的同时，您可以通过将其与其他`navigation`方面相结合来推断出更细粒度的信息：
 
+````react
+// Is this just a normal load?
+let isNormalLoad =
+  navigation.state === "loading" &&
+  navigation.formData == null;
 
+// Are we reloading after an action?
+let isReloading =
+  navigation.state === "loading" &&
+  navigation.formData != null &&
+  navigation.formAction === navigation.location.pathname;
 
+// Are we redirecting after an action?
+let isRedirecting =
+  navigation.state === "loading" &&
+  navigation.formData != null &&
+  navigation.formAction !== navigation.location.pathname;
+````
 
+### navigation.formData
 
+使用 <Form> 或 useSubmit 开始的任何 POST、PUT、PATCH 或 DELETE 导航都将附加到您的表单提交数据。这主要有助于使用 submission.formData FormData 对象构建 "乐观 UI"。
 
+在 GET 表单提交的情况下，formData 将为空，数据将反映在 navigation.location.search 中。
 
+### navigation.location
 
+这会告诉您下一个[位置](https://reactrouter.com/en/main/utils/location)是什么。
 
+请注意，如果表单正在提交到链接指向的 URL，则此链接不会显示为“待处理”，因为我们只在“加载”状态下这样做。当状态为“正在提交”时，表单将包含待处理的 UI，一旦操作完成，链接将变为待处理状态。
 
+## useNavigationType 
 
+**类型注释**
 
+````react
+declare function useNavigationType(): NavigationType;
+// 如果操添加到历史堆栈
+type NavigationType = "POP" | "PUSH" | "REPLACE";
+````
 
+此钩子返回当前导航的类型，或者用户是通过历史堆栈中的 pop、push 还是 replace 操作来到达当前页面的。
 
+## useOutlet
 
+**类型注释**
 
+```ts
+declare function useOutlet(): React.ReactElement | null;
+```
 
+返回路由层次结构这一级别的子路由的元素。这个钩子在内部被用来[``](https://reactrouter.com/en/main/components/outlet)渲染子路由。
 
+有几个原因可能会导致 useOutlet 返回空值:
+
+1. 当前组件没有被包含在任何 <Routes> 组件内。
+
+​			只有嵌套在 <Routes> 内的路由才会有 outlet 对象。
+
+1. 当前组件不是一个路由或子路由。
+
+​			只有符合路由规则(<Route> 组件)的组件才会有 outlet 对象。
+
+1. 当前路由已经被卸载。
+
+​			当路由已经离开 DOM 树时,其 outlet 对象将会被销毁。
+
+1. 路由的 key 发生变化。
+
+​			当路由的 key prop 变化时,其 outlet 对象也将被重新创建。
+
+1. 当前路由是懒加载路由。
+
+​			懒加载路由在初始化时并不被创建,等到真正访问时才创建,导致在初始渲染时 useOutlet 返回空。
+
+所以一般情况下,如果 useOutlet 返回空值,需要检查:
+
+- 组件是否正确嵌套在 <Routes> 内
+- 组件是否是一个有效的 <Route> 组件
+- 路由是否已经离开 DOM 树
+- 路由 key 是否发生变化
+- 路由是否是一个懒加载路由
+
+解决方法通常是正确设置组件,保证路由一直存在于 DOM 树中,避免在初始化时使用懒加载路由等。
+
+## [useOutletContext](https://reactrouter.com/en/main/hooks/use-outlet-context)
+
+**类型注释**
+
+````ts
+declare function useOutletContext<
+  Context = unknown
+>(): Context;
+````
+
+父子路由间共享状态是非常普通的场景。React Router的<Outlet/>提供了一个不错的解决方案,使用context。
+
+```react
+function Parent() {
+  const [count, setCount] = React.useState(0);
+  return <Outlet context={[count, setCount]} />;
+}
+```
+
+```react
+import { useOutletContext } from "react-router-dom";
+
+function Child() {
+  const [count, setCount] = useOutletContext();
+  const increment = () => setCount((c) => c + 1);
+  return <button onClick={increment}>{count}</button>;
+}
+```
+
+如果你使用TypeScript,我们推荐父组件提供一个自定义hook来访问context值。这有助于消费者拥有良好的类型定义,控制消费者以及知道谁在消耗context值。这里是一个更现实的例子:
+
+```react
+import * as React from "react";
+import type { User } from "./types";
+import { Outlet, useOutletContext } from "react-router-dom";
+
+type ContextType = { user: User | null };
+
+export default function Dashboard() {
+  const [user, setUser] = React.useState<User | null>(null);
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <Outlet context={{ user }} />
+    </div>
+  );
+}
+
+export function useUser() {
+  return useOutletContext<ContextType>();
+}
+```
+
+```react
+import { useUser } from "../dashboard";
+
+export default function DashboardMessages() {
+  const { user } = useUser();
+  return (
+    <div>
+      <h2>Messages</h2>
+      <p>Hello, {user.name}!</p>
+    </div>
+  );
+}
+```
+
+## [useParams](https://reactrouter.com/en/main/hooks/use-params)
+
+**类型注释**
+
+````ts
+declare function useParams<
+  K extends string = string
+>(): Readonly<Params<K>>;
+````
+
+useParams hook返回当前URL匹配的<Route path>动态参数的键值对对象。子路由会继承父路由的所有参数。
+
+```react
+import * as React from 'react';
+import { Routes, Route, useParams } from 'react-router-dom';
+
+function ProfilePage() {
+  // Get the userId param from the URL.
+  let { userId } = useParams();
+  // ...
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="users">
+        <Route path=":userId" element={<ProfilePage />} />
+        <Route path="me" element={...} />
+      </Route>
+    </Routes>
+  );
+}
+```
 
 
 

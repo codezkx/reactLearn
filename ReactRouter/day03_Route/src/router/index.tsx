@@ -15,6 +15,8 @@ import {
   RouterLoaderData,
   RouterMatch,
   RouterMatches,
+  RouterNavigation,
+  RouterOutletContext,
 } from './components.ts';
 
 import {
@@ -86,6 +88,22 @@ const routes = [
         path: 'matches/:id',
         element: <RouterMatches />,
         key: 'matches',
+        handle: {
+          crumb: (data) => <span>{data.threadName}</span>
+        }
+      },
+      {
+        path: 'navigation/:id',
+        element: <RouterNavigation />,
+        key: 'navigation',
+        handle: {
+          crumb: (data) => <span>{data.threadName}</span>
+        }
+      },
+      {
+        path: 'outlet/context/:id',
+        element: <RouterOutletContext />,
+        key: 'outlet_context',
         handle: {
           crumb: (data) => <span>{data.threadName}</span>
         }
