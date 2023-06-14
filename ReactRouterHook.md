@@ -968,5 +968,399 @@ function App() {
 }
 ```
 
+## [useResolvedPath](https://reactrouter.com/en/main/hooks/use-resolved-path)
+
+**类型注释**
+
+> ```ts
+> declare function useResolvedPath(
+>   to: To,
+>   options?: { relative?: RelativeRoutingType }
+> ): Path;
+> ```
+
+这个钩子会将给定的路径名与当前位置的路径名解析出来，从而得到完整的路径名。
+
+在构建相对路径的链接时，这非常有用。例如，可以查看<NavLink>的源代码，它内部调用了useResolvedPath来解析要链接的页面的完整路径名。
+
+```react
+import React from "react";
+import { useResolvedPath } from "react-router-dom";
+
+function Demo() {
+  const resolvedPath = useResolvedPath("/about");
+  console.log(resolvedPath);
+  // Object:
+  // {
+  //   pathname: "/about"
+  //   search: ""
+  //   hash: ""
+  //   state: {}
+  //   key: "some_key"
+  // }
+  
+  return <div>Demo</div>;
+}
+
+export default Demo;
+```
+
+有关详细信息，请参阅[解析路径。](https://reactrouter.com/en/main/utils/resolve-path)
+
+## [useRevalidator 🆕](https://reactrouter.com/en/main/hooks/use-revalidator)
+
+这个钩子允许你出于任何原因重新验证数据。React Router在调用操作后会自动重新验证数据，但是你可能希望在其他情况下重新验证，比如当焦点返回窗口时。
+
+> **警告**
+>
+> 此功能仅在使用数据路由器时有效，请参阅[选择路由器](https://reactrouter.com/en/main/routers/picking-a-router)
+
+```react
+import { useRevalidator } from "react-router-dom";
+
+function WindowFocusRevalidator() {
+  let revalidator = useRevalidator();
+
+  useFakeWindowFocus(() => {
+    revalidator.revalidate();
+  });
+
+  return (
+    <div hidden={revalidator.state === "idle"}>
+      Revalidating...
+    </div>
+  );
+}
+```
+
+再次强调，React Router 已经在绝大多数情况下自动重新验证页面上的数据，因此这种情况很少需要使用本钩子。如果你发现自己需要使用它来响应用户交互的普通 CRUD 操作，那么可能没有充分利用其他自动完成此操作的 API，例如 <Form>、useSubmit 或 useFetcher。
+
+### revalidator.state
+
+属性告诉你当前重新验证的状态，可能是 "idle"（空闲）或 "loading"（加载中）。
+
+这对于创建加载指示器和旋转动画非常有用，让用户知道应用正在处理中。
+
+### revalidator.revalidate()
+
+这会启动重新验证。
+
+```react
+function useLivePageData() {
+  let revalidator = useRevalidator();
+  let interval = useInterval(5000);
+
+  useEffect(() => {
+    if (revalidator.state === "idle") {
+      revalidator.revalidate();
+    }
+  }, [interval]);
+}
+```
+
+### Notes
+
+虽然可以同时渲染多个 useRevalidator，但它实际上是一个单例。这意味着当调用一个 revalidator.revalidate() 时，所有实例都会同时进入 "loading" 状态（或者更确切地说，它们都会更新以报告单例状态）。
+
+当在重新验证正在进行时调用 revalidate() 时，竞态条件会自动处理。
+
+如果在重新验证正在进行时发生导航，重新验证将被取消，并为下一页从所有加载器请求新数据。
+
+## [useRouteError 🆕](https://reactrouter.com/en/main/hooks/use-route-error)
+
+在 errorElement 内部，这个钩子返回在操作、加载程序或渲染过程中抛出的任何内容。注意，抛出的响应有特殊的处理方式，请参阅 isRouteErrorResponse 了解更多信息。
+
+> **警告**
+>
+> 此功能仅在使用数据路由器时有效，请参阅[选择路由器](https://reactrouter.com/en/main/routers/picking-a-router)
+
+```react
+function ErrorBoundary() {
+  const error = useRouteError();
+  console.error(error);
+  return <div>{error.message}</div>;
+}
+
+<Route
+  errorElement={<ErrorBoundary />}
+  loader={() => {
+    // unexpected errors in loaders/actions
+    something.that.breaks();
+  }}
+  action={() => {
+    // stuff you throw on purpose in loaders/actions
+    throw new Response("Bad Request", { status: 400 });
+  }}
+  element={
+    // and errors thrown while rendering
+    <div>{breaks.while.rendering}</div>
+  }
+/>;
+```
+
+## useRouteLoaderData
+
+钩子可以使当前渲染路由的数据在树中的任何位置都可用。这对于需要远在树深处的路由中获取数据的组件非常有用，也可以让父级路由获取树深处子路由的数据。
+
+> **警告**
+>
+> 此功能仅在使用数据路由器时有效，请参阅[选择路由器](
+
+React Router 内部使用确定性的、自动生成的路由 ID 存储数据，但你可以提供自己的路由 ID，使得这个钩子更易于使用。考虑一个定义了 ID 的路由的路由器：
+
+```react
+createBrowserRouter([
+  {
+    path: "/",
+    loader: () => fetchUser(),
+    element: <Root />,
+    id: "root",
+    children: [
+      {
+        path: "jobs/:jobId",
+        loader: loadJob,
+        element: <JobListing />,
+      },
+    ],
+  },
+]);
+```
+
+现在用户数据可以在应用的任何其他地方使用了。
+
+````react
+const user = useRouteLoaderData("root");
+````
+
+useRouteLoaderData 钩子只能获取当前渲染的路由的数据。如果你请求的是当前未渲染的路由的数据，钩子将返回 undefined。
+
+## [useRoutes](https://reactrouter.com/en/main/hooks/use-routes)
+
+**类型注释**
+
+````react
+declare function useRoutes(
+  routes: RouteObject[],
+  location?: Partial<Location> | string;
+): React.ReactElement | null;
+````
+
+useRoutes 钩子是 <Routes> 的函数式等价物，但它使用 JavaScript 对象来定义路由，而不是使用 <Route> 元素。这些对象具有与普通 <Route> 元素相同的属性，但它们不需要 JSX。
+
+useRoutes 的返回值可以是一个有效的 React 元素，你可以用它来渲染路由树，如果没有匹配的路由，则返回 null。
+
+```react
+import * as React from "react";
+import { useRoutes } from "react-router-dom";
+
+function App() {
+  let element = useRoutes([
+    {
+      path: "/",
+      element: <Dashboard />,
+      children: [
+        {
+          path: "messages",
+          element: <DashboardMessages />,
+        },
+        { path: "tasks", element: <DashboardTasks /> },
+      ],
+    },
+    { path: "team", element: <AboutPage /> },
+  ]);
+
+  return element;
+}
+```
+
+## [useSearchParams](https://reactrouter.com/en/main/hooks/use-search-params)
+
+> **提示**
+>
+> 这是 的网络版本`useSearchParams`。对于 React Native 版本，[请转到此处](https://reactrouter.com/en/main/hooks/use-search-params-rn)。
+
+**类型声明**
+
+```ts
+declare function useSearchParams(
+  defaultInit?: URLSearchParamsInit
+): [URLSearchParams, SetURLSearchParams];
+
+type ParamKeyValuePair = [string, string];
+
+type URLSearchParamsInit =
+  | string
+  | ParamKeyValuePair[]
+  | Record<string, string | string[]>
+  | URLSearchParams;
+
+type SetURLSearchParams = (
+  nextInit?:
+    | URLSearchParamsInit
+    | ((prev: URLSearchParams) => URLSearchParamsInit),
+  navigateOpts?: : NavigateOptions
+) => void;
+
+interface NavigateOptions {
+  replace?: boolean;
+  state?: any;
+  preventScrollReset?: boolean;
+}
+```
+
+useSearchParams 钩子用于读取和修改当前位置 URL 的查询字符串。与 React 自带的 useState 钩子类似，useSearchParams 返回一个由两个值组成的数组：当前位置的 search 参数和一个可用于更新它们的函数。与 React 的 useState 钩子一样，setSearchParams 还支持函数式更新。因此，你可以提供一个接受 searchParams 并返回更新后版本的函数。
+
+```react
+import * as React from "react";
+import { useSearchParams } from "react-router-dom";
+
+function App() {
+  let [searchParams, setSearchParams] = useSearchParams();
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    // The serialize function here would be responsible for
+    // creating an object of { key: value } pairs from the
+    // fields in the form that make up the query.
+    let params = serializeFormQuery(event.target);
+    setSearchParams(params);
+  }
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>{/* ... */}</form>
+    </div>
+  );
+}
+```
+
+> **提示**
+>
+> setSearchParams 函数的工作方式类似于 navigate，但仅适用于 URL 的查询部分。另外请注意，setSearchParams 的第二个参数的类型与 navigate 的第二个参数相同。
+
+````react
+import { useSearchParams,   } from 'react-router-dom';
+
+const RouterSearchParams =  () => {
+    let [searchParams, setSearchParams] = useSearchParams();
+    const userId = searchParams.get('name'); // uzi
+    console.log(userId, 'userId')
+    function handleClick() {
+        setSearchParams({name: 'uzi-s'})
+        console.log(searchParams.get('name'), 'update')
+    }
+    return (
+        <>
+            <div onClick={ () => handleClick()}>setSearchParams</div>
+        </>
+    )
+}
+
+export default RouterSearchParams;
+````
+
+
+
+## [useSubmit 🆕](https://reactrouter.com/en/main/hooks/use-submit)
+
+<Form> 的命令式版本，让你作为程序员可以提交一个表单，而不是用户。
+
+> **警告**
+>
+> **此功能仅在使用数据路由器时有效，请参阅[选择路由器](https://reactrouter.com/en/main/routers/picking-a-router)**
+
+例如，每次表单内的值发生变化时提交表单：
+
+```react
+import { useSubmit, Form } from "react-router-dom";
+
+function SearchField() {
+  let submit = useSubmit();
+  return (
+    <Form
+      onChange={(event) => {
+        submit(event.currentTarget);
+      }}
+    >
+      <input type="text" name="search" />
+      <button type="submit">Search</button>
+    </Form>
+  );
+}
+```
+
+如果你想在一段时间内没有活动后自动将某人登出你的网站，这也可能很有用。在这种情况下，我们将“没有活动”定义为用户在 5 分钟内没有导航到任何其他页面。
+
+```react
+import { useSubmit, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+
+function AdminPage() {
+  useSessionTimeout();
+  return <div>{/* ... */}</div>;
+}
+
+function useSessionTimeout() {
+  const submit = useSubmit();
+  const location = useLocation();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      submit(null, { method: "post", action: "/logout" });
+    }, 5 * 60_000);
+
+    return () => clearTimeout(timer);
+  }, [submit, location]);
+}
+```
+
+### submit
+
+submit 函数的第一个参数可以接受许多不同的值。
+
+你可以提交任何表单或表单输入元素：
+
+````
+// input element events
+<input onChange={(event) => submit(event.currentTarget)} />;
+
+// React refs
+let ref = useRef();
+<button ref={ref} />;
+submit(ref.current);
+````
+
+You can submit `FormData`:
+
+````
+let formData = new FormData();
+formData.append("cheese", "gouda");
+submit(formData);
+````
+
+### Submit options
+
+第二个参数是一组直接映射到表单提交属性的选项：
+
+```react
+submit(null, {
+  action: "/logout",
+  method: "post",
+});
+
+// same as
+<Form action="/logout" method="post" />;
+```
+
+
+
+
+
+
+
+
+
+
+
 
 

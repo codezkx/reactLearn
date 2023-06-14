@@ -12,7 +12,8 @@ import RouterMatch from '@/components/hooks/RouterMatch.tsx';
 import RouterMatches from '@/components/hooks/RouterMatches.tsx';
 import RouterNavigation from '@/components/hooks/RouterNavigation.tsx';
 import RouterOutletContext from '@/components/hooks/RouterOutletContext.tsx';
-
+import RouterSolvedPath from '@/components/hooks/RouterSolvedPath.tsx';
+import RouterSearchParams from '@/components/hooks/RouterSearchParams.tsx';
 
 export {
   Root,
@@ -29,5 +30,7 @@ export {
   RouterMatches,
   RouterNavigation,
   RouterOutletContext,
+  RouterSolvedPath,
+  RouterSearchParams,
 }
 

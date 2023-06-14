@@ -96,6 +96,20 @@ const Root = () => {
       >
         go to useOutletContext
       </h3>
+      <h3
+        onClick={() => {
+          navigation('/solved/path/123');
+        }} 
+      >
+        go to useResolvedPath
+      </h3>
+      <h3
+        onClick={() => {
+          navigation('/search/params/123?name=uzi&age=26');
+        }} 
+      >
+        go to useSearchParams
+      </h3>
       <Outlet context='我是Outlet组件' />
     </>
   )

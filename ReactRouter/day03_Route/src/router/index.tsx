@@ -17,6 +17,8 @@ import {
   RouterMatches,
   RouterNavigation,
   RouterOutletContext,
+  RouterSolvedPath,
+  RouterSearchParams,
 } from './components.ts';
 
 import {
@@ -104,6 +106,23 @@ const routes = [
         path: 'outlet/context/:id',
         element: <RouterOutletContext />,
         key: 'outlet_context',
+        handle: {
+          crumb: (data) => <span>{data.threadName}</span>
+        }
+      },
+      {
+        path: 'solved/path/:id',
+        element: <RouterSolvedPath />,
+        key: 'solved_path',
+        handle: {
+          crumb: (data) => <span>{data.threadName}</span>
+        }
+      },
+      
+      {
+        path: 'search/params/:id',
+        element: <RouterSearchParams />,
+        key: 'search_params',
         handle: {
           crumb: (data) => <span>{data.threadName}</span>
         }
