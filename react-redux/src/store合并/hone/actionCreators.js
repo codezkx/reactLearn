@@ -2,17 +2,6 @@ import axios from 'axios';
 
 import * as actionTypes from './constants';
 
-
-export const addCounterAction = (counter) => ({
-    type: actionTypes.ADD_COUNTER,
-    counter: counter,
-});
-
-export const subCounterAction = (counter) => ({
-    type: actionTypes.SUB_COUNTER,
-    counter: counter,
-})
-
 // 执行异步操作
 export const fetchHomeMultidataAction = () => {
     // 返回一个函数 在组件调用
