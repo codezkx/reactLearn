@@ -191,14 +191,14 @@ form[action$="destroy"] button {
   color: #eeb004;
 }
 #sidebar nav a.active span {
-  color: inherit;
+  color: red;
 }
 
 i {
   color: #818181;
 }
 #sidebar nav .active i {
-  color: inherit;
+  color: red;
 }
 
 #sidebar ul {
@@ -231,7 +231,7 @@ i {
 
 #sidebar nav a.active {
   background: hsl(224, 98%, 58%);
-  color: white;
+  color: red;
 }
 
 #sidebar nav a.pending {

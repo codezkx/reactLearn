@@ -387,7 +387,7 @@ function loader({ request, context: { user } }) {
 - [`createStaticRouter`](https://reactrouter.com/en/main/routers/create-static-router)
 - [`StaticRouterProvider`](https://reactrouter.com/en/main/routers/static-router-provider)
 
-## `createStaticRouter`
+## createStaticRouter
 
 `createStaticRouter` 用于在服务器（例如 Node.js 或其他 JavaScript 运行时）上使用数据路由进行渲染。它是一种用于服务器端渲染的工具，用于路由请求和呈现相应的内容。有关更完整的概述，请参阅服务器端渲染指南。 
 
@@ -448,7 +448,7 @@ declare function createStaticRouter(
 - [`createStaticHandler`](https://reactrouter.com/en/main/routers/create-static-handler)
 - [`StaticRouterProvider`](https://reactrouter.com/en/main/routers/static-router-provider)
 
-## `<RouterProvider>`
+## RouterProvider
 
 所有数据路由对象都传递给此组件以渲染您的应用程序，并启用其余的数据 API。 这通常指 `RemixServer` 组件，它是一个 React 组件，用于在服务器端渲染 Remix 应用程序。`RemixServer` 组件将数据路由对象作为其 `dataRouters` 属性传递，以便在服务器端渲染期间使用它们来加载数据和呈现应用程序 
 
@@ -494,7 +494,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 />
 ````
 
-## `<StaticRouterProvider>`
+## StaticRouterProvider
 
 `<StaticRouterProvider>` 接受来自 `createStaticRouter()` 的路由器和来自 `createStaticHandler()` 的上下文，并在服务器（例如 Node.js 或其他 JavaScript 运行时）上呈现您的应用程序。它是一种用于服务器端渲染的工具，用于路由请求和呈现相应的内容。有关更完整的概述，请参阅服务器端渲染指南 
 
@@ -578,6 +578,8 @@ declare function StaticRouterProvider(props: {
 
 ## BrowserRouter
 
+> **使用history模式**
+
 ### Type declaration 
 
 ````TS
@@ -610,7 +612,9 @@ root.render(
 );
 ````
 
-##HashRouter
+## HashRouter
+
+> **使用hash模式**
 
 Type declaration 
 
@@ -2843,7 +2847,7 @@ interface RoutesProps {
 
 ````
 
-## `<ScrollRestoration />`
+## ScrollRestoration 
 
 此组件将在加载程序完成后模拟浏览器的滚动恢复功能，以确保滚动位置恢复到正确的位置，甚至跨越域名。 
 
