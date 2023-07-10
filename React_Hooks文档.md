@@ -872,6 +872,29 @@
 
 ## 五、useCallback
 
+> 父组件调用子组件无关的state时，可避免其重新渲染。（当然子组件需要使用memo）
+>
+> 
+>
+>  
+>
+> ````react
+> const [count, setCount] = useState();
+> const increment = useCallback(() => {
+> 	setCount(count + 1);
+> }, [count]);
+> 
+> 优化点 
+> const [count, setCount] = useState();
+> const countRef = useRef(); // 组件重新渲染时不会初始化值，（react会保留ref的值）；
+> countRef.current = count
+> const increment = useCallback(() => {
+> 	setCount(countRef.current + 1);
+> }, []);
+> ````
+>
+> 
+
 > useCallback是一个React Hook，它可以让你在重新渲染之间缓存函数定义。 
 >
 > ````js
