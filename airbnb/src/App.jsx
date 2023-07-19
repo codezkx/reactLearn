@@ -4,14 +4,15 @@ import routes from '@/router'
 
 function App() {
   return (
-    <div className='app'>
-      <div className='header'>header</div>
-      <div className='page'>
-        {useRoutes(routes)}
-      </div>
-      <div className='footer'>footer</div>
-    </div>
-
+    <>
+      {useRoutes(routes)}
+    </>
+    // <div className='app'>
+    //   <div className='page'>
+        
+    //   </div>
+    //   <div className='footer'>footer</div>
+    // </div>
   );
 }
 

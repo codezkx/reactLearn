@@ -14,10 +14,11 @@
     "react-redux": "^8.1.1",
     "react-router-dom": "^6.14.1",
     "react-scripts": "5.0.1",
+    "styled-components": "^6.0.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "craco start",
+    "dev": "craco start",
     "build": "craco build",
     "test": "cracos test",
     "eject": "react-scripts eject"

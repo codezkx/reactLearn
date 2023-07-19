@@ -1,5 +1,13 @@
-const Home = () => {
-    return <h1>我是home</h1>
-}
+import React, { memo } from "react"
+
+import Header from "@/components"
+
+const Home = memo(() => {
+	return (
+		<div>
+			<Header />
+		</div>
+	)
+})
 
 export default Home
