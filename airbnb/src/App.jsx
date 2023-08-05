@@ -1,18 +1,15 @@
 import { useRoutes } from 'react-router-dom';
 
+import Header  from "@/components/header";
+
 import routes from '@/router'
 
 function App() {
   return (
-    <>
+    <div>
+      <Header />
       {useRoutes(routes)}
-    </>
-    // <div className='app'>
-    //   <div className='page'>
-        
-    //   </div>
-    //   <div className='footer'>footer</div>
-    // </div>
+    </div>
   );
 }
 

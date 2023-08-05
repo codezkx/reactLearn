@@ -1,8 +1,8 @@
 import { memo } from "react";
 
-import HeaderLeft from "./header/components/left";
-import HeaderRight from "./header/components/right";
-import HeaderCenter from "./header/components/center";
+import HeaderLeft from "./components/left";
+import HeaderRight from "./components/right";
+import HeaderCenter from "./components/center";
 
 import HeaderStyledWrapper from "./style";
 
@@ -17,4 +17,4 @@ const Header = memo(() => {
   );
 });
 
-export default Header
+export default Header 

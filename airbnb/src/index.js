@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
 
 import { Provider }  from 'react-redux';
 import store from './store';
@@ -8,6 +9,7 @@ import store from './store';
 import App from './App';
 import './assets/css/index.less';
 import 'normalize.css';
+import theme from './assets/theme';
 
 
 // @ => src: webpack
@@ -21,9 +23,11 @@ root.render(
     {/* Suspense 防止异步加载时组件没有渲染出来导致报错  */}
     <Suspense fallback="loading">
       <Provider store={store}>
-        <HashRouter>
-          <App />
-        </HashRouter>
+        <ThemeProvider theme={theme}>
+          <HashRouter>
+            <App />
+          </HashRouter>
+        </ThemeProvider>
       </Provider>
     </Suspense>
   </React.StrictMode>
