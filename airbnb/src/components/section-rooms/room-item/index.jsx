@@ -3,15 +3,12 @@ import { memo } from "react";
 import RoomItemWrapper from './style';
 
 const RoomItem = memo((props) => {
-  const { itemData, width } = props;
+  const { itemData, width = '25%'} = props;
+  
   return (
     <RoomItemWrapper
-      verifyColor={itemData?.verify_info?.text_color || '#39576a'}
-      appraiseInfo={{
-        contentColor: itemData?.bottom_info?.content_color || '#39576a',
-        fontSize: itemData?.bottom_info?.font_size,
-      }}
-      width={width || '25%'}
+      color={itemData?.verify_info?.text_color || '#39576a'}
+      width={width}
     >
       <div className="room">
         <div className="room-ricture">

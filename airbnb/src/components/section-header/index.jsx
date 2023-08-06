@@ -3,10 +3,12 @@ import { memo } from "react";
 import SectionHeaderStyledWrapper from './style'
 
 const SectionHeader = memo((props) => {
-  const { title } = props
+  const { title, subtitle } = props
   return (
     <SectionHeaderStyledWrapper>
-      <h2 className="pdB16">{ title }</h2>
+      <h2 className='title'>{ title }</h2>
+      { subtitle && <div className='subtitle'>{subtitle}</div> }
+
     </SectionHeaderStyledWrapper>
   )
 });

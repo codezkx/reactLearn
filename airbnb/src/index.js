@@ -19,9 +19,9 @@ import theme from './assets/theme';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    {/* Suspense 防止异步加载时组件没有渲染出来导致报错  */}
+  // <React.StrictMode>
     <Suspense fallback="loading">
+    {/* Suspense 防止异步加载时组件没有渲染出来导致报错  */}
       <Provider store={store}>
         <ThemeProvider theme={theme}>
           <HashRouter>
@@ -30,5 +30,5 @@ root.render(
         </ThemeProvider>
       </Provider>
     </Suspense>
-  </React.StrictMode>
+  // </React.StrictMode>
 );

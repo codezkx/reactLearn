@@ -5,7 +5,7 @@ import SectionRooms from "@/components/section-rooms";
 import SectionTabs from "@/components/home/section-tabs";
 import SectionFooter from "@/components/section-footer";
 
-const DiscountHousing = memo((props) => {
+const RecommendHousing = memo((props) => {
   const { infoData = {} } = props;
   const cityList = infoData.dest_address?.map(cityItem => cityItem.name);
   
@@ -27,9 +27,9 @@ const DiscountHousing = memo((props) => {
       <SectionRooms
         roomList={infoData.dest_list[tabName]}
         itemWidth="33.333333%" />
-      <SectionFooter name="佛山"/>
+      <SectionFooter name={tabName} />  
     </div>
   )
 });
 
-export default DiscountHousing;
+export default RecommendHousing;

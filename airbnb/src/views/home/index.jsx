@@ -5,35 +5,46 @@ import { isEmptyO } from "@/utils";
 
 import Banner from "@/components/banner";
 import HoemeWapper from "./style";
+import RecommendHousing from "./c-cpns/recommend";
+import DiscountHousing from "./c-cpns/discount";
+import DestinationCityHousing from "./c-cpns/destination-city";
 import GoodPriceHousing from "./c-cpns/good-price";
 import HighScoreHeader from "./c-cpns/high-score";
-import DiscountHousing from "./c-cpns/discount";
+import LuxuryHousing from "./c-cpns/luxury-housing";
 
 import { fetchHomeDataAction } from "@/store/modules/home";
 
 const Home = memo(() => {
-  const { 
+  const {
+    discountInfo,
+    recommendInfo,
+    longforInfo,
     goodPriceInfo,
-    highScoreInfo, 
+    highScoreInfo,
+    plusInfo,
   } = useSelector((state) => ({
+    discountInfo: state.home.discountInfo,
+    recommendInfo: state.home.recommendInfo,
+    longforInfo: state.home.longforInfo,
     goodPriceInfo: state.home.goodPriceInfo,
     highScoreInfo: state.home.highScoreInfo,
-    discountInfo: state.home.discountInfo,
+    plusInfo: state.home.plusInfo,
   }), shallowEqual);
 
   const dispatch = useDispatch();
-
   useEffect(() => {
     dispatch(fetchHomeDataAction())
   }, [dispatch]);
-  console.log(goodPriceInfo)
   return (
     <HoemeWapper>
-      {/* <Banner /> */}
+      <Banner />
       <div className="mian">
-        <DiscountHousing />
-        { isEmptyO && <GoodPriceHousing infoData={goodPriceInfo}/> }
-        { isEmptyO && <HighScoreHeader infoData={highScoreInfo}/> }
+        { isEmptyO(discountInfo) && <DiscountHousing infoData={discountInfo} /> }
+        { isEmptyO(recommendInfo) && <RecommendHousing infoData={recommendInfo} /> }
+        { isEmptyO(longforInfo) && <DestinationCityHousing infoData={longforInfo} /> }
+        { isEmptyO(goodPriceInfo) && <GoodPriceHousing infoData={goodPriceInfo}/> }
+        { isEmptyO(highScoreInfo) && <HighScoreHeader infoData={highScoreInfo}/> }
+        { isEmptyO(plusInfo) && <LuxuryHousing infoData={plusInfo}/> }
       </div>
     </HoemeWapper>
   )

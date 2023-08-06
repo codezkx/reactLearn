@@ -27,7 +27,7 @@ const RoomItemWrapper = styled.div`
       padding: 8px 0;
       font-size: 12px;
       font-weight: bold;
-      color: ${props => props.verifyColor};
+      color: ${props => props.color};
     }
 
     .room-style {
