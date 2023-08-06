@@ -1,15 +1,21 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import { useDispatch } from "react-redux";
 
-import { isEmptyO } from "@/utils";
+import { fetchRoomListAction } from "@/store/modules/entire/actionCreators";
+import EntireRooms from "./entire-rooms";
+// import { isEmptyO } from "@/utils";
 
 import EntireWrapper from "./style";
 
 const Entire = memo(() => {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(fetchRoomListAction());
+  }, [dispatch]);
+
   return (
     <EntireWrapper>
-      <div className="mian">
-        123
-      </div>
+      <EntireRooms />
     </EntireWrapper>
   )
 });

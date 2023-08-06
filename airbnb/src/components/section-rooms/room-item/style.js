@@ -9,6 +9,72 @@ const RoomItemWrapper = styled.div`
     border-radius: 4px;
     overflow: hidden;
 
+    .swiper {
+      position: relative;
+      cursor: pointer;
+
+      &:hover {
+        .control {
+          display: flex;
+        }
+      }
+
+      .control {
+        position: absolute;
+        z-index: 1;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: none;
+        justify-content: space-between;
+        color: var(--primary-fs-color);
+
+        .btn {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 83px;
+          height: 100%;
+          background-color: linear-gradient(to left, transparent 0%, rgba(0, 0, 0, .25) 100%);
+  
+          &.right {
+            background-color: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, .25) 100%);
+          }
+        }
+      }
+
+      .indicator {
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 0;
+        bottom: 10px;
+        width: 30%;
+        margin: 0 auto;
+
+        .dot-item {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 20%;
+
+          .dot {
+            width: 6px;
+            height: 6px;
+            background-color: #FFF; 
+            border-radius: 50%;
+
+            &.action {
+              width: 8px;
+              height: 8px;
+            }
+          }
+        }
+      }
+
+    }
+
     .room-ricture {
       position: relative;
       box-sizing: border-box;
@@ -20,6 +86,7 @@ const RoomItemWrapper = styled.div`
         top: 0;
         width: 100%;
         height: 100%;
+        object-fit: cover; // 当图片被压缩时，使用它可以占满宽和高
       }
     }
 
