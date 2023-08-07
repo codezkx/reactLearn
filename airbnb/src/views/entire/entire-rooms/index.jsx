@@ -1,7 +1,5 @@
-import { memo, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-
-import { fetchRoomListAction } from "@/store/modules/entire/actionCreators";
+import { memo } from "react";
+import { useSelector } from "react-redux";
 
 import EntireRoomsWrapper from "./style";
 import RoomItem from "@/components/section-rooms/room-item";
@@ -18,7 +16,7 @@ const EntireRooms = memo(() => {
       <div className="romm-title">{ total }多处住所</div>
       <div className="room-list">
         {
-          roomList.map(room => {
+          roomList.map((room, index) => {
             return <RoomItem itemData={room} width="20%" key={room._id} />
           })
         }

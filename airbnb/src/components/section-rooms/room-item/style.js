@@ -29,6 +29,7 @@ const RoomItemWrapper = styled.div`
         display: none;
         justify-content: space-between;
         color: var(--primary-fs-color);
+        transition: display 300ms ease;
 
         .btn {
           display: flex;
@@ -36,10 +37,10 @@ const RoomItemWrapper = styled.div`
           align-items: center;
           width: 83px;
           height: 100%;
-          background-color: linear-gradient(to left, transparent 0%, rgba(0, 0, 0, .25) 100%);
+          background-image: linear-gradient(to left, transparent 0%, rgba(0, 0, 0, .25) 100%);
   
           &.right {
-            background-color: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, .25) 100%);
+            background-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, .25) 100%);
           }
         }
       }
@@ -48,7 +49,7 @@ const RoomItemWrapper = styled.div`
         position: absolute;
         left: 0;
         right: 0;
-        z-index: 0;
+        z-index: 1;
         bottom: 10px;
         width: 30%;
         margin: 0 auto;
@@ -62,12 +63,13 @@ const RoomItemWrapper = styled.div`
           .dot {
             width: 6px;
             height: 6px;
-            background-color: #FFF; 
+            background-color: var(--indicator-bg-color);
             border-radius: 50%;
 
-            &.action {
+            &.active {
               width: 8px;
               height: 8px;
+              background-color: #FFF;
             }
           }
         }
@@ -79,6 +81,8 @@ const RoomItemWrapper = styled.div`
       position: relative;
       box-sizing: border-box;
       padding: 66.66% 8px 0;
+      border-radius: 3px;
+      overflow: hidden;
 
       img {
         position: absolute;

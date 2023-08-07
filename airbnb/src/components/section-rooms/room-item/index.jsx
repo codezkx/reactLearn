@@ -11,18 +11,18 @@ const RoomItem = memo((props) => {
   const { itemData, width = '25%'} = props;
   const sliderRef = useRef(null)
   const [selectIndex, setSelectIndex] = useState(0)
-  const prictureUrls = itemData?.pricture_urls || [];
+  const pictureUrls = itemData?.picture_urls || [];
 
   const controlClickHandle = (event, isRight) => {
     event.stopPropagation();
     // 下一个面板 上一个面板
     isRight ? sliderRef.current.next() : sliderRef.current.prev();
     let nextIndex = isRight ? selectIndex + 1 : selectIndex - 1;
-    if (nextIndex < 0) nextIndex = prictureUrls.length - 1;
-    if (nextIndex > 0) nextIndex = 0;
+    if (nextIndex > pictureUrls.length - 1) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = pictureUrls.length - 1;
     setSelectIndex(nextIndex)
   }
-
+  
   const pictureElement = (
     <div className="room-ricture">
       <img
@@ -44,18 +44,18 @@ const RoomItem = memo((props) => {
       </div>
       <div className="indicator">
         <Indicator selectIndex={selectIndex} >
-            { prictureUrls.map((item, index) => (
-              <div className="dot-item">
-                <span className={classNames('dot-item', {active: selectIndex === index})} key={item} />
+            { pictureUrls.map((item, index) => (
+              <div className="dot-item" key={index}>
+                <span className={classNames('dot', {active: selectIndex === index})} key={index} />
               </div>
             )) }
         </Indicator> 
       </div>
       <Carousel dots={false} ref={sliderRef}>
         {
-          prictureUrls.map(item => {
+          pictureUrls.map(item => {
             return (
-              <div className="room-ricture">
+              <div className="room-ricture" key={item}>
                 <img src={item} alt="airbnb" />
               </div>
             )
@@ -70,8 +70,8 @@ const RoomItem = memo((props) => {
       color={itemData?.verify_info?.text_color || '#39576a'}
       width={width}
     >
-      { !prictureUrls.length ? pictureElement : sliderElement}
       <div className="room">
+        { !pictureUrls.length ? pictureElement : sliderElement}
         <div className="room-chief">
           <span>{itemData?.verify_info?.messages[0]} · </span>
           <span>{itemData?.verify_info?.messages[1]}</span>

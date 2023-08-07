@@ -23,7 +23,7 @@ export const fetchRoomListAction = () => {
     const offset = currentPage * 10;
     const res = await getEntireRoomList(offset);
     const roomList = res.list
-    const total = res.total
+    const total = res.totalCount
     dispatch(changeRoomListAction(roomList));
     dispatch(changeTotalAction(total));
   }

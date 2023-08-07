@@ -7,7 +7,7 @@ const IndicatorWrapper = styled.div`
   .i-content {
     display: flex;
     position: relative;
-    transition: transform 200ms ease;
+    transition: transform 500ms ease;
     
     > * {
       flex-shrink: 0;
