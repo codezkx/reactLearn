@@ -5,7 +5,8 @@
 	"main": "index.js",
 	"scripts": {
 		"lint": "eslint --ext .ts,.jsx,.tsx --fix --quiet ./packages",
-		"prepare": "husky"
+		"prepare": "husky",
+		"tsc": "tsc --noEmit"
 	},
 	"keywords": [],
 	"author": "",
