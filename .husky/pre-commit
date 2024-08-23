@@ -3,4 +3,4 @@
 
 pnpm lint
 
-pnpm run tsc   
+pnpm run tsc

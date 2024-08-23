@@ -118,7 +118,7 @@ package.json 文件
 . "$(dirname -- "$0")/_/husky.sh"
 
 pnpm lint
-
+pnpm run tsc
 ```
 
 > TODO: pnpm lint 会对代码全量检查, 当项目复杂后执行速度可能比较慢, 届时可以考虑使用 lint-staged, 实现支队暂缓区代码践行检查.
