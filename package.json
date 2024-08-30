@@ -4,6 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
+		"build:dev": "rimraf dist && rollup --bundleConfigAsCjs --config scripts/rollup/react.config.js",
 		"lint": "eslint --ext .ts,.jsx,.tsx --fix --quiet ./packages",
 		"prepare": "husky",
 		"tsc": "tsc --noEmit"

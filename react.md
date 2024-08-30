@@ -189,3 +189,182 @@ typescript 配置
 	}
 }
 ```
+
+## React 项目结构
+
+- react(宿主环境无关的公用方法)
+- react-reconciler (协调器的实现, 宿主环境无关)
+- 各种宿主环境的包
+- shared (公用辅助方法, 宿组环境无关)
+
+### JSX 转换是什么
+
+JSX 转换 playground
+
+```jsx
+import { jsx as _jsx } from 'react/jxs-runtime';
+
+/*#PURE__*/ _js('div', {
+	children: '123'
+});
+```
+
+包括两部分
+
+- 编译时
+- 运行时: jsx 方法或 React.createElement 方法的实现(包括 dev、prod 两个环境)
+
+编译时由 babel 编译实现, 我们来实现运行时, 工作量包括:
+
+1. 实现 jsx 方法
+2. 实现打包流程
+3. 实现调试打包结果的环境
+
+### 实现 jsx 方法
+
+包括:
+
+- jsx DEV 方法(dev 环境)
+- jsx 方法 (prod 环境)
+- React.createElement 方法
+
+### 实现打包流程
+
+对应上述 3 方法,打包对象文件
+
+- react/jsx-dev-runtime.js (dev 环境)
+- react/jsx-rumtime.js (prod 环境)
+- React
+
+### 调试打包结果
+
+my-react -> 打包 -> react 包 -> 执行 pnpm link --global -> react 包(全局 node-modules) -> pnpm link react --global -> Demo(原生 react 生成的项目, 在 my-react 同级文件夹下创建) 这时就可以调试自己写的源代码了
+
+## 初探 reconciler
+
+reconciler 是 React 核心逻辑所在的模块,中文名叫协调器,协调(reconciler) 就是 diff 算法的意思.
+
+### reconciler 有什么用?
+
+- 前端框架结构与工作原理
+
+  > 描述 UI(JSX, template) -> 编译优化 -> 运行时核心模块(vue: render; react: reconciler) -> 调用 -> 宿主环境 API -> 显示真实页面
+
+  - 消费 JSX
+  - 没有编译优化
+  - 开放通用 API 共不同宿主环境使用
+
+#### 核心模块消费 JSX 的过程
+
+##### 核心模块操作的数据结构是?
+
+当前已知的数据结构: React Element(JSX 转换 playground)
+React Element 如果作为核心模块操作的数据结构, 存在的问题:
+
+- 无法表达节点之间的关系
+- 字段有限, 不好拓展(比如: 无法表达状态)
+
+所以,需要一种新的数据结构, 他的特点:
+
+- 介于 React Element 与真实 UI 节点之间
+- 能够表达节点之间的关系
+- 方便拓展(不仅作为数据存储单元, 也能作为工作单元)
+
+这就是 FiberNode (虚拟 DOM 在 React 中的实现)
+当前我们了解的节点类型:
+
+- JSX
+- React Element
+- FiberNode
+- DOM Element
+
+#### reconciler 的工作方式
+
+对于同一个节点,比较其 React Element 与 fiberNode, 生成子 fiberNode. 并根据比较的结果生成不同标记(插入, 删除, 移动...),对应不同宿主环境 API 的执行
+
+> React Element -> 比较 -> Fiber Node -> 产生标记
+> 子 React Element -> 比较 -> 子 Fiber Node -> 产生标记
+> ...
+
+比如, 挂载<div></div>
+
+```js
+// React Element
+jsx('div');
+
+// Fiber Node
+null;
+// 生成子fiberNode
+// 对应标记
+Placement;
+```
+
+将 <div></div> 更新为<p></p>
+
+```js
+// React Element
+jsx("p")
+
+// Fiber Node
+FiberNode {type: "div"}
+// 生成子fiberNode
+// 对应标记
+Deletetion Placement
+```
+
+当所有 React Element 比较完后,会生成一颗 fiberNode 树, 一共会存在两颗 fiberNode 树:
+
+- current: 与视图中真实 UI 对应的 fiberNode 树.
+- workInProgress: 触发更新后, 正在 reconciler 中计算的 fiberNode 树
+
+双缓冲技术介绍(百度查)
+
+### JSX 消费的顺序
+
+以 DFS(深度优先遍历)的顺序遍历 React Element, 这意味着:
+
+- 如果有子节点, 遍历子节点; (beginWork 过程)
+- 如果没有子节点, 遍历兄弟节点; (completeUnitOfWork 过程)
+
+这是个递归的过程, 存在递、归两个阶段
+
+- 递: 对应 beginWork
+- 归: 对应 completeWork
+
+### 如何触发更新
+
+常见的触发更新的方式:
+
+- ReactDom.createRoot().render(老版的 ReactDOM.render)
+- this.setState
+- useState 的 dispath 方法
+
+希望实现一套统一的更新机制, 他的特点是:
+
+- 兼容上述触发更新的方式
+- 方便后续扩展 (优先级机制...)
+
+更新机制的组成部分
+
+- 代表更新的数据结构 --Update
+- 消费 update 的数据结构 -- UpdateQueue
+
+```js
+UpdateQueue = [shared.pending: [update, update] ]
+```
+
+接下来的工作包括:
+
+- 实现 mount 时调用的 API
+- 将该 API 接入上述更新机制中
+
+需要考虑的事情:
+
+- 更新可能发生于任意组件, 而更新流程是从根节点递归的
+- 需要一个统一的根节点保存通用信息
+
+```jsx
+ReactDom.createRoot(rootElement).render(<App />);
+```
+
+![](./assets/img/1.png)
