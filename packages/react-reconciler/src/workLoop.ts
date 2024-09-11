@@ -4,8 +4,8 @@ import { completeWork } from './completeWork';
 import {
 	createWorkInProgress,
 	FiberNode,
-	FiberRootNode,
-	PendingPassiveEffects
+	FiberRootNode
+	// PendingPassiveEffects
 } from './fiber';
 import { HostRoot } from './workTags';
 
@@ -46,10 +46,20 @@ function renderRoot(root: FiberRootNode) {
 		try {
 			workLoop();
 		} catch (e) {
-			console.warn('workLoop 发生错误', e);
+			if (__DEV__) {
+				console.warn('workLoop 发生错误', e);
+			}
 			workInProgress = null;
 		}
 	} while (true);
+	// root.current.alternate -> createWorkInProgress 创建的
+	// workInProgress 中是一颗完整的DOM树, 其中包含类需要更新的副作用节点 Placement
+	const finisheWork = root.current.alternate;
+	//
+	root.finishedWork = finisheWork;
+
+	// wip fiberNode树 树中的flags
+	// commitRoot(root);
 }
 
 //JSX 消费的顺序 递归处理

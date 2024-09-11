@@ -1,5 +1,5 @@
 import { type Container } from 'hostConfig';
-import { ReactElement, ReactElementType } from 'shared/ReactTypes';
+import { ReactElementType } from 'shared/ReactTypes';
 import { FiberNode, FiberRootNode } from './fiber';
 import { HostRoot } from './workTags';
 import { scheduleUpdateOnFiber } from './workLoop';
@@ -9,7 +9,7 @@ import {
 	createUpdateQueue,
 	UpdateQueue
 } from './updateQueue';
-import { SyncLane } from './fiberLanes';
+// import { SyncLane } from './fiberLanes';
 
 /* 
 	实现 mount 时调用的 API
@@ -23,14 +23,14 @@ export function createContainer(container: Container) {
 
 // 调用render方法后 执行updateContainer
 export function updateContainer(
-	element: ReactElement | null,
+	element: ReactElementType | null,
 	root: FiberRootNode
 ) {
 	const hostRootFiber = root.current;
 	// 首屏渲染与更新机制联系起来
 	const update = createUpdate<ReactElementType | null>(element);
 	enqueueUpdate(
-		hostRootFiber.updateQueue as UpdateQueue<ReactElement | null>,
+		hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
 		update
 	);
 	// 把根节点参入到render中进行处理以及渲染

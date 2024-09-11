@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import ts from 'rollup-plugin-typescript2';
 import cjs from '@rollup/plugin-commonjs';
+import replace from '@rollup/plugin-replace';
 
 const resolve = (filePath) => path.resolve(__dirname, filePath);
 // 打包入口文件路径
@@ -35,6 +36,9 @@ export function getPackageJSON(pkgName) {
 	return JSON.parse(str);
 }
 
-export function getBaseRollupPlugins({ typescript = {} } = {}) {
-	return [cjs(), ts(typescript)];
+export function getBaseRollupPlugins({
+	alias = { __DEV__: true }, // 开发环境时需要处理的逻辑, 比如: 报错等处理
+	typescript = {}
+} = {}) {
+	return [replace(alias), cjs(), ts(typescript)];
 }

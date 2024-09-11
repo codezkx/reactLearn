@@ -319,7 +319,7 @@ Deletetion Placement
 
 双缓冲技术介绍(百度查)
 
-### JSX 消费的顺序
+## JSX 消费的顺序
 
 以 DFS(深度优先遍历)的顺序遍历 React Element, 这意味着:
 
@@ -368,3 +368,108 @@ ReactDom.createRoot(rootElement).render(<App />);
 ```
 
 ![](./assets/img/1.png)
+
+## 初探mount流程
+
+更新流程的目的:
+
+- 生成wip fiberNode树
+- 标记副作用flags
+
+更新流程的步骤:
+
+- 递: beginWork
+- 归: completeWork
+
+### beginWork
+
+对于如下结构的reactElement:
+
+````react
+<A>
+	<B />
+</A>
+````
+
+当进入A的beginWork时. 通过对比B current fiberNode与B  , 生成B对应tip fiberNode. 在此过程中最多会标记2类与 [结构变化] 相关的flags: 
+
+- Placement
+  - 插入: a -> ab 移动: abc -> bca
+- ChildDeletion
+  -  删除 ul > li * 3 -> ul > li * 1
+
+不包含与 [属性变化] 相关的flag:
+
+- Update
+
+  ````react
+  <img title="张三" /> -> <img title="李四">
+  ````
+
+### 实现与Host相关节点的beginWork
+
+首先, 为开发环境增加\__DEV\__标识, 方便DEV包打印更多信息:
+
+> pnpm i -d -w @rollup/plugin-replace
+
+HostRoot的beginWork工作流程;(updateHostRoot)
+
+1. 计算状态的最新值
+2. 创造子fiberNode
+
+HostComponent的beginWork工作流程;(updateHostComponent)
+
+1. 创造子fiberNode
+
+HostText没有beginWork工作流程(因为他没有子节点)()
+
+````react
+<p>张三</p>
+````
+
+### beginWork
+
+考虑如下结构的reactElement;
+
+````react
+<div>
+	<p>张三</p>
+	<span>两年半</span>
+<div>
+````
+
+理论上mount流程完毕后包含的flags: (ChildReconciler) 
+
+- 两年半 Placement
+- span Placement
+- 张三 Placement
+- p Placement
+- div Placement
+
+相比于执行5次Placement. 我们可以构建好  [离屏DOM树] 后, 对div执行1次Placement操作
+
+### completeWork
+
+需要解决的问题: 
+
+- 对于Host类型fiberNode: 构建离屏DOM树(flags 为Placement)
+- 标记Update flag (TODO)
+
+complete性能优化策略
+
+flags分布在不同fiberNode中, 如何快速找到他们?
+
+答案: 利用completeWork向上遍历(归)的流程, 将子fiberNode的flags冒泡到父fiberNode (bubbleProperties)
+
+
+
+
+
+
+
+
+
+
+
+
+
