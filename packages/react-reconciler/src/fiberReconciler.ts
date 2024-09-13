@@ -18,7 +18,8 @@ import {
 export function createContainer(container: Container) {
 	const hostRootFiber = new FiberNode(HostRoot, {}, null);
 	const root = new FiberRootNode(container, hostRootFiber);
-	hostRootFiber.updateQueue = createUpdateQueue();
+	hostRootFiber.updateQueue = createUpdateQueue<ReactElementType>();
+	return root;
 }
 
 // 调用render方法后 执行updateContainer

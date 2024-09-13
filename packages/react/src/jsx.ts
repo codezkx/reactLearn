@@ -67,4 +67,30 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 };
 
 // 开发环境
-export const jsxDEV = jsx;
+export const jsxDEV = (type: ElementType, config: any) => {
+	let key: Key = null;
+	const props: Props = {};
+	let ref: Ref = null;
+
+	// 遍历config
+	for (const prop in config) {
+		const val = config[prop];
+		if (prop === 'key') {
+			if (val !== undefined) {
+				key = String(val);
+			}
+			continue;
+		}
+		if (prop === 'ref') {
+			if (val !== undefined) {
+				ref = val;
+			}
+			continue;
+		}
+		// 如果属性是继承的或者不存在，该方法返回 false。
+		if (Object.hasOwn(config, prop)) {
+			props[prop] = val;
+		}
+	}
+	return ReactElement(type, key, ref, props);
+};

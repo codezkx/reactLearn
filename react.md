@@ -461,9 +461,62 @@ flags分布在不同fiberNode中, 如何快速找到他们?
 
 答案: 利用completeWork向上遍历(归)的流程, 将子fiberNode的flags冒泡到父fiberNode (bubbleProperties)
 
+## 初探ReactDOM
 
+react内部3个阶段
 
+- shcedule阶段 ( 调度阶段 )
+- render阶段 (beginWork; complateWork)
+- commit阶段  (commitRoot)
 
+## commit 阶段的3个子阶段
+
+- beforeMutation阶段
+- mutation阶段
+- latouy阶段
+
+### 当前 阶段要执行的任务
+
+1. fiber树的切换
+2. 执行Placement对应操作
+
+需要注意的问题. 考虑如下JSX如何span含有flag, 该如何找到他
+
+````html
+<App>
+	<div>
+		<span>张三</span>
+	</div>
+</App>
+````
+
+### 打包ReactDOM
+
+需要注意的点:
+
+- 兼容原版react的导出
+
+- 处理hostConfig的指向
+
+  >  pnpm i -d -w @rollup/plugin-alias. 路径别名
+
+## 初探FC与实现第二种调试方式
+
+FunctionComponent 需要考虑的问题
+
+- 如何支持FC?
+- 如何组织Hooks?
+
+### 如何支持FC?
+
+FC的工作同样植根于: 
+
+- beginWork
+- completeWork
+
+### 第二种调试方式
+
+采用vie的实时调试, 他的好处是 [ 实时看到源码运行效果 ]
 
 
 

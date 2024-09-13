@@ -66,14 +66,14 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 					);
 				default:
 					if (__DEV__) {
-						console.warn('未实现的reconcile类型', newChild);
+						console.warn('未定义的element.$$typeof', newChild);
 					}
 			}
 		}
 		// TODO 多节点的情况 ul>li * 3
 
 		// 文本节点
-		if (typeof newChild === 'string' && typeof newChild === 'number') {
+		if (typeof newChild === 'string' || typeof newChild === 'number') {
 			return placeSingleChild(
 				reconcileSingleTextNode(returnFiber, currentFiber, newChild)
 			);

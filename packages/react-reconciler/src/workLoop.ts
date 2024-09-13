@@ -1,4 +1,5 @@
 import { beginWork } from './beginWork';
+import { commitMutationEffects } from './commitWork';
 import { completeWork } from './completeWork';
 
 import {
@@ -7,6 +8,7 @@ import {
 	FiberRootNode
 	// PendingPassiveEffects
 } from './fiber';
+import { MutationMask, NoFlags } from './fiberFlags';
 import { HostRoot } from './workTags';
 
 // 权限指针指向全局正在工作的fiberNode
@@ -45,6 +47,7 @@ function renderRoot(root: FiberRootNode) {
 	do {
 		try {
 			workLoop();
+			break;
 		} catch (e) {
 			if (__DEV__) {
 				console.warn('workLoop 发生错误', e);
@@ -52,14 +55,50 @@ function renderRoot(root: FiberRootNode) {
 			workInProgress = null;
 		}
 	} while (true);
+
 	// root.current.alternate -> createWorkInProgress 创建的
 	// workInProgress 中是一颗完整的DOM树, 其中包含类需要更新的副作用节点 Placement
 	const finisheWork = root.current.alternate;
 	//
 	root.finishedWork = finisheWork;
-
 	// wip fiberNode树 树中的flags
-	// commitRoot(root);
+	commitRoot(root); // commit阶段入口
+}
+
+function commitRoot(root: FiberRootNode) {
+	// 获取更新后的fiberNode
+	const finishedWork = root.finishedWork;
+	if (finishedWork === null) {
+		return;
+	}
+	if (__DEV__) {
+		console.warn('commit阶段开始', finishedWork);
+	}
+
+	// 重制
+	root.finishedWork = null;
+
+	// 判断是否存在3个子阶段需要执行的操作
+	// root flags root subtreeFlags
+	// 判断subtree是否被标记
+	const subtreeHasEffect =
+		(finishedWork.subtreeFlags & MutationMask) !== NoFlags;
+
+	// 判断root是否被标记
+	const rootHasEffect = (finishedWork.flags & MutationMask) !== NoFlags;
+
+	// 处理存在标记的节点
+	if (subtreeHasEffect || rootHasEffect) {
+		// beforeMutation
+		// mutation 处理 Placement
+		commitMutationEffects(finishedWork);
+
+		// 将 finishedWork(workInProgress)树赋值给current
+		root.current = finishedWork;
+		// latouy
+	} else {
+		root.current = finishedWork;
+	}
 }
 
 //JSX 消费的顺序 递归处理
@@ -73,7 +112,8 @@ function workLoop() {
 function preformUnitOfWork(fiber: FiberNode) {
 	// next 可能是子fiber 或者 null
 	const next = beginWork(fiber); // 开始处理fiber
-
+	// 执行完beginWork后，pendingProps 变为 memoizedProps
+	fiber.memoizedProps = fiber.pendingProps;
 	// 表明已经 “递” 过程已经完成; 没有子节点了
 	if (next === null) {
 		// 如果没有子节点, 遍历兄弟节点;
@@ -85,16 +125,20 @@ function preformUnitOfWork(fiber: FiberNode) {
 
 function completeUnitOfWork(fiber: FiberNode) {
 	let node: FiberNode | null = fiber;
-	do {
-		completeWork(node);
-		const sibling = node.sibling;
 
-		// 是否有兄弟节点
-		if (sibling !== null) {
+	do {
+		const next = completeWork(node);
+
+		if (next !== null) {
+			workInProgress = next;
+			return;
+		}
+
+		const sibling = node.sibling;
+		if (sibling) {
 			workInProgress = sibling;
 			return;
 		}
-		// 获取父fiberNode
 		node = node.return;
 		workInProgress = node;
 	} while (node !== null);

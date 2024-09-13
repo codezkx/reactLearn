@@ -12,6 +12,7 @@ export const ChildDeletion = 0b00000000000000000000010000;
 // useEffect
 export const PassiveEffect = 0b00000000000000000000100000;
 
+// 需要更新节点操作
 export const MutationMask = Placement | Update | ChildDeletion;
 
 // 删除子节点可能触发useEffect destroy

@@ -37,7 +37,7 @@ export function getPackageJSON(pkgName) {
 }
 
 export function getBaseRollupPlugins({
-	alias = { __DEV__: true }, // 开发环境时需要处理的逻辑, 比如: 报错等处理
+	alias = { __DEV__: true, preventAssignment: true }, // 开发环境时需要处理的逻辑, 比如: 报错等处理
 	typescript = {}
 } = {}) {
 	return [replace(alias), cjs(), ts(typescript)];

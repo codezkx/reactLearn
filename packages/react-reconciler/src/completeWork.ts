@@ -1,10 +1,16 @@
 import {
+	Instance,
 	appendInitialChildren,
 	createInstance,
 	createTextInstance
 } from 'hostConfig';
 import { FiberNode } from './fiber';
-import { HostRoot, HostComponent, HostText } from './workTags';
+import {
+	HostRoot,
+	HostComponent,
+	HostText,
+	FunctionComponent
+} from './workTags';
 import { NoFlags } from './fiberFlags';
 
 export function completeWork(wip: FiberNode) {
@@ -22,27 +28,36 @@ export function completeWork(wip: FiberNode) {
 				wip.stateNode = instance;
 			}
 			bubbleProperties(wip);
-			return;
+			return null;
 		case HostText:
-			// 1. 构建DOM
-			const instance = createTextInstance(newProps.content);
-			// 2. 将DOM插入到DOM树中
-			wip.stateNode = instance;
+			if (current !== null && wip.stateNode) {
+				// update
+			} else {
+				// 1. 构建DOM
+				const instance = createTextInstance(newProps.content);
+				// 2. 将DOM插入到DOM树中
+				wip.stateNode = instance;
+			}
 			bubbleProperties(wip);
 			return null; // 没有用子节点, 需要在“归”中处理
 		case HostRoot:
 			bubbleProperties(wip);
-			return;
+			return null;
+		case FunctionComponent:
+			bubbleProperties(wip);
+			return null;
 		default:
 			if (__DEV__) {
-				console.warn('');
+				console.warn('completeWork未定义的fiber.tag', wip);
 				break;
 			}
+			return null;
 	}
+	return null;
 }
 
 // 在parent 中插入 wip    ???
-function appendAllChildren(parent: FiberNode, wip: FiberNode) {
+function appendAllChildren(parent: Instance, wip: FiberNode) {
 	let node = wip.child;
 	// 存在兄弟节点
 	while (node !== null) {
@@ -74,6 +89,7 @@ function appendAllChildren(parent: FiberNode, wip: FiberNode) {
 function bubbleProperties(wip: FiberNode) {
 	let subtreeFlags = NoFlags;
 	let child = wip.child;
+
 	while (child !== null) {
 		subtreeFlags |= child.subtreeFlags;
 		subtreeFlags |= child.flags;
@@ -81,5 +97,5 @@ function bubbleProperties(wip: FiberNode) {
 		child.return = wip;
 		child = child.sibling;
 	}
-	wip.subtreeFlags = subtreeFlags;
+	wip.subtreeFlags |= subtreeFlags;
 }
