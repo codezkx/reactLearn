@@ -13,7 +13,6 @@ export const appendInitialChildren = (
 	parent: Instance | Container,
 	child: Instance
 ) => {
-	console.log(parent, child, 'child');
 	parent.appendChild(child);
 };
 

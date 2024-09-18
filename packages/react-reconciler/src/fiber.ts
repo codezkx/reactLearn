@@ -37,7 +37,7 @@ export class FiberNode {
 	// 在current 和 workInProgress 之间切换; 当alternate= current时, 更新后为alternate= workInProgress, 反之亦然
 	alternate: FiberNode | null;
 	updateQueue: unknown; // 更新的数据结构 存储state的
-	memoizedState: any; // 最终状态  更新后的
+	memoizedState: any; // 指向的是hook的链表
 
 	/**
 	 * @param {WorkTag} tag

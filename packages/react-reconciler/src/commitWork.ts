@@ -49,7 +49,7 @@ const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 // 插入/移动
 function commitPlacement(finishedWork: FiberNode) {
 	if (__DEV__) {
-		console.log('执行Placement操作 -> 插入、移动DOM', finishedWork);
+		console.warn('执行Placement操作 -> 插入、移动DOM', finishedWork);
 	}
 	// 获取其父节点
 	const hostParent = getHostParent(finishedWork);

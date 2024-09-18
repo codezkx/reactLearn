@@ -516,13 +516,75 @@ FC的工作同样植根于:
 
 ### 第二种调试方式
 
-采用vie的实时调试, 他的好处是 [ 实时看到源码运行效果 ]
+采用vite的实时调试, 他的好处是 [ 实时看到源码运行效果 ]
 
+## 实现 useState
 
+hook脱离FC上下文, 仅仅是普通函数, 如何让他拥有感知上下文环境的能力?
 
+比如说:  
 
+- Hook如何知道在另一个Hook的上下文环境内执行
 
+  ````react
+  function App() {
+  	useEffect(() => {
+  		// 执行 useSstate时怎么知道在useEffect中执行?
+  		useState(0);
+  	})
+  }
+  ````
 
+- Hook怎么知道当前的mount还是update?
+
+- 解决方案: 在不同上下文中调用的Hook不是同一个函数
+
+  <img src="./assets/img/2.png" alt="image-20240918140658271" style="zoom:50%;" />
+
+  实现 「内部数据共享层」 是的注意事项:
+
+  - 以浏览器举例, Reconciler + hostConfig = ReactDom
+
+  - 增加 「内部数据共享层」, 意味着Reconciler与React产生关联, 进而意味着ReactDOM与React产生.
+
+  - 如果两个包「产生关联」, 在打包时需要考虑: 两则的代码时打包在一起还是分开?
+
+  - 如何打包在一起, 意味着打包后的ReactDOM中会包含一个内部数据共享层, React中也会包含一个内部数据共享层, 这两者不是同一个内部数据共享层
+
+  - 而我们希望两者共享数据, 所以不希望ReactDOM中会包含React得代码
+
+    - Hook如何知道自身数据保存在那?
+
+      ````react
+      function App() {
+      	useEffect(() => {
+      		// 执行 useSstate时怎么知道在useEffect中执行?
+      		useState(0);	
+      	})
+      }
+      ````
+
+### 实现Hooks的数据结构
+
+fiberNode中可用的字段:
+
+- memoizedState
+
+- updateQueue
+
+  > FC FiberNode -> memoizedState -> Hooks(useState) -> hook数据
+
+ 对于FC对应的fiberNode, 存在两成数据:
+
+- fiberNode.memoizedState对应Hooks链表
+- 链表中每个hook对应自身的数据
+
+### 实现useState
+
+包括2方面工作:
+
+1. 实现mount时useState的实现
+2. 实现dispatch方法, 并接入现有更新流程内
 
 
 
