@@ -586,5 +586,37 @@ fiberNode中可用的字段:
 1. 实现mount时useState的实现
 2. 实现dispatch方法, 并接入现有更新流程内
 
+## ReactElement 的测试用例
+
+本节课我们将实现第三种调试方式——用例调试, 包括三部分内容:
+
+- 实现第一个测试工具test-utils
+- 实现测试环境
+- 实现ReactElement
+
+与测试相关的代码都来自React仓库, 可以先把React仓库下载下来:
+
+> git clone 
+
+### 实现test-utils
+
+这是用于测试的工具集, 来源自ReactTestUtils.js, 特点是: 使用ReactDOM作为宿主环境
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
