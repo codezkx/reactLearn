@@ -588,7 +588,7 @@ fiberNode中可用的字段:
 
 ## ReactElement 的测试用例
 
-本节课我们将实现第三种调试方式——用例调试, 包括三部分内容:
+我们将实现第三种调试方式——用例调试, 包括三部分内容:
 
 - 实现第一个测试工具test-utils
 - 实现测试环境
@@ -602,9 +602,91 @@ fiberNode中可用的字段:
 
 这是用于测试的工具集, 来源自ReactTestUtils.js, 特点是: 使用ReactDOM作为宿主环境
 
+## 初探update流程
 
+update流程与mount流程的区别
 
+对于beginWork:
 
+- 需要处理childDeletion的情况
+- 需要处理节点移动的情况
+
+对于completeWork:
+
+- 需要处理HostText内容更新的情况
+- 需要处理HostComponent属性变化的情况
+
+对于commitWork:
+
+- 对于childDeletion, 需要遍历被删除的子树
+
+useState
+
+- 实现相对于mountState的updateState
+
+### beginWork流程
+
+这里处理单一节点, 所以省去了「节点移动」的情况. 我们需要处理
+
+- singleElement (reconcileSingleElement)
+- singleTextNode (reconcileSingleTextNode)
+
+处理流程为:
+
+- 比较是否可以复用current fiber
+
+  - 比较key, 如果key不同, 不能复用
+  - 比较type, 如果type不同, 不能复用
+  - 如果key与type都相同, 则可复用
+
+- 不能复用, 则创建新的(同mount流程), 可以复用则复用旧的
+
+  > 注意: 对于同一个fiberNode, 即使反复更新, current 、 wip这两个fiberNode会重复使用
+
+### completeWork流程
+
+主要处理「标记Update」的情况, 我们处理HostText内容更新的情况.
+
+### commitWork
+
+对于标记ChildDeteletion的子树, 由于子树中: 
+
+- 对于FC, 需要处理useEffect unmount执行、 解绑ref
+- 对于HostComponent, 需要解绑ref
+- 对于子树的「根HostComponent」, 需要移除DOM
+
+所以需要实现「遍历ChildDeletion子树」的流程
+
+### 对于useState
+
+需要实现
+
+- 正对update时的dispatcher
+- 实现对表mountWorkInProgresHook的updateWorkInProgresHook
+- 实现updatState中「计算新state」的逻辑
+
+其中updateWorkInProgresHook的实现需要考虑
+
+- Hook 数据从哪来?
+
+- 交互阶段触发的更新
+
+  ````
+  <div onClick={() => update(i)}>1</div>
+  ````
+
+- render 阶段触发的更新(TODO)
+
+  ````
+  function App() {
+  	const [num, update] = useState(1)
+  	// 触发更新
+  	update(100)
+  	return <div>{num}</div>
+  }
+  ````
+
+  
 
 
 

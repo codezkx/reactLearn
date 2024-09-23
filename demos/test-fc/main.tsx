@@ -2,16 +2,15 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 function App() {
-	// const [num] = useState(0);
-	// console.log(num);
-	return (
-		<div>
-			<span>1</span>
-		</div>
-	);
+	const [num, setNum] = useState(0);
+	window.setNum = setNum;
+	console.log(num, 'num');
+	return num === 3 ? <Child /> : <div>1</div>
 }
 
 function Child() {
+
+	debugger
 	return <span>mini-react</span>;
 }
 

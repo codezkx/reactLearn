@@ -34,10 +34,10 @@ export class FiberNode {
 	index: number;
 
 	memoizedProps: Props | null; // 更新后的
-	// 在current 和 workInProgress 之间切换; 当alternate= current时, 更新后为alternate= workInProgress, 反之亦然
-	alternate: FiberNode | null;
+	alternate: FiberNode | null; // 在current 和 workInProgress 之间切换; 当alternate= current时, 更新后为alternate= workInProgress, 反之亦然
 	updateQueue: unknown; // 更新的数据结构 存储state的
 	memoizedState: any; // 指向的是hook的链表
+	deletions: FiberNode[] | null;
 
 	/**
 	 * @param {WorkTag} tag
@@ -71,6 +71,7 @@ export class FiberNode {
 		// 副作用
 		this.flags = NoFlags;
 		this.subtreeFlags = NoFlags;
+		this.deletions = null;
 	}
 }
 
@@ -91,6 +92,7 @@ export class FiberRootNode {
 	}
 }
 
+// current 与 wip 之间的转换
 export const createWorkInProgress = (
 	current: FiberNode,
 	pendingProps: Props
@@ -112,6 +114,7 @@ export const createWorkInProgress = (
 		wip.subtreeFlags = NoFlags;
 		// wip.deletions = null;
 		wip.type = current.type;
+		wip.deletions = null;
 	}
 	wip.updateQueue = current.updateQueue;
 	wip.flags = current.flags;
