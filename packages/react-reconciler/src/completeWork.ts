@@ -12,6 +12,7 @@ import {
 	FunctionComponent
 } from './workTags';
 import { NoFlags, Update } from './fiberFlags';
+import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 
 // 标记需要更新节点
 function markUpdate(fiber: FiberNode) {
@@ -25,6 +26,10 @@ export function completeWork(wip: FiberNode) {
 		case HostComponent:
 			if (current !== null && wip.stateNode) {
 				// update
+				// TODO 更新元素属性
+				// 不应该在此处调用updateFiberProps，应该跟着判断属性变化的逻辑，在这里打flag
+				// 再在commitWork中更新fiberProps，我准备把这个过程留到「属性变化」相关需求一起做
+				updateFiberProps(wip.stateNode, newProps);
 			} else {
 				// 1. 构建DOM
 				const instance = createInstance(wip.type, newProps);
