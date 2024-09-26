@@ -717,7 +717,149 @@ useState
 
 ## 实现Diff算法
 
-当前
+当前仅实现了单一节点的 增/删 操作, 即「单节点Diff算法」. 我们下面来实现「多节点的Diff算法」
+
+### 对于 reconcileSingleElement的改动
+
+ **一下字母代表 组件, 数字代表 key** 
+
+当前支持的情况: ()
+
+- A1 - B2
+- A1 - A2
+
+需要支持的情况
+
+- ABC -> A
+
+「单/多节点」是指「更新后是单/多节点」.
+
+更细致的, 我们需要区别4中情况:
+
+- key 相同,  type相同 == 复用当前节点
+
+  > 例如: A1B2C3 -> A1。 删除B2C3
+
+- key 相同,  type不相同 == 不存在任何复用的可能性
+
+  > 例如: A1B2C3 -> B1
+
+-   == 当前节点不能复用
+
+- key不同, type不同 == 当前节点不能复用
+
+### 对于 reconcileSingleTextNode 的改动
+
+类型reconcileSingleElement改动
+
+### 对于同级多节点Diff的支持
+
+单节点需要支持的情况:
+
+- 插入Placement
+- 删除 ChildDeletion
+
+多节点需要支持的情况:
+
+- 插入Placement
+- 删除 ChildDeletion
+- 移动Placement
+
+整体流程分为4步.
+
+1. 将current中所有同级fiber保存在Map中
+2. 遍历newChild数组, 对于每个遍历到的element, 存在两种情况
+   1. 在Map中存在对应current fiber, 且可以复用
+   2. 在Map中不存在对应current fiber 或 不能复用
+3. 判断是插入还是移动
+4. 最后Map中剩下的都标记删除
+
+### 步骤2-- 是否复用 详解
+
+首先, 根据key从Map中获取current fiber, 如果不存在current fiber, 则没有复用的可能.
+
+接下来, 分情况讨论: 
+
+- element 是 HosText, current fiber 是不是?
+- element 是其他React Element, current fiber 是不是?
+- TODO Element是数组或Fragment, current fiber 是不是?
+
+### 步骤3  插入/移动判断 详解
+
+「移动」具体是指「向右移动」
+
+移动的判断依据: element 的 index 与 「element 对应current fiber」 index的比较
+
+A1B2C3 -> B2 C3 A1
+
+0   1   2         0   1   2
+
+当遍历element时,「当前遍历到的element」 一定是「所有已遍历的element」中最靠右哪个.
+
+所以只需要记录最后一个可复用fiber在current中的index (lastPlacedIndex), 在接下来的遍历中:
+
+- 如果接下来遍历到的可复用fiber得index < lastPlacedIndex, 则标记Placement.
+- 否则, 不标记.
+
+### 移动操作的执行
+
+Placement同时对应
+
+- 移动
+- 插入
+
+对于插入操作, 之前对应的DOM方法是 parentNode.appendChild, 现在为了实现移动操作, 需要支持 parentNode.insertBefore.
+
+parentNode.insertBefore 需要找到「目标兄弟Host节点」, 要考虑2个因素:
+
+- 可能并不是目标 fiber 的直接兄弟节点
+
+  ````react
+  // 情况1
+  <A /> <B />
+  function B() {
+  	return <div />
+  }
+  
+  // 情况2
+  <App /> <div />
+  function App() {
+    return <A />;
+  }
+  ````
+
+- 不稳定的Host节点不能作为「目标兄弟Host节点」
+
+### 不足
+
+- 不支持数组与Fragment
+
+  ````
+  <>
+  	<div></div>
+  	<div></div>
+  <>
+  
+  <ul>
+  	<li></li>
+  	<li></li>
+  	[<li></li>, <li></li>]
+  <ul>
+  ````
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
