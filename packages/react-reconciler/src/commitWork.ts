@@ -84,7 +84,7 @@ function recordHostChildrenToDelete(
 	unmountFiber: FiberNode
 ) {
 	// 1. 找到第一个 root host 节点
-	let lastOne = hostChildrenToDelete[hostChildrenToDelete.length - 1];
+	const lastOne = hostChildrenToDelete[hostChildrenToDelete.length - 1];
 	// 当前没有存在要删除的Host节点
 	if (!lastOne) {
 		hostChildrenToDelete.push(unmountFiber);
@@ -103,7 +103,7 @@ function recordHostChildrenToDelete(
 
 function commitDeletion(childToDeletion: FiberNode) {
 	// 在Fragment之前，只需删除子树的根Host节点，但支持Fragment后，可能需要删除同级多个节点
-	let hostChildrenToDelete: FiberNode[] = [];
+	const hostChildrenToDelete: FiberNode[] = [];
 
 	// 递归子树
 	commitNestedComponent(childToDeletion, (unmountFiber) => {
