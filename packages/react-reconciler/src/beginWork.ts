@@ -6,7 +6,8 @@ import {
 	HostRoot,
 	HostComponent,
 	HostText,
-	FunctionComponent
+	FunctionComponent,
+	Fragment
 } from './workTags';
 import { ReactElementType } from 'shared/ReactTypes';
 // 递归中的递阶段
@@ -20,6 +21,8 @@ export function beginWork(wip: FiberNode) {
 			return null; // 没有用子节点, 需要在“归”中处理
 		case FunctionComponent:
 			return updateFunctionComponent(wip);
+		case Fragment:
+			return updateFrament(wip);
 		default:
 			if (__DEV__) {
 				console.warn('beginWork 未实现的类型');
@@ -27,6 +30,12 @@ export function beginWork(wip: FiberNode) {
 			}
 	}
 	return null;
+}
+
+function updateFrament(wip: FiberNode) {
+	const nextChildren = wip.pendingProps;
+	reconcileChildren(wip, nextChildren);
+	return wip.child;
 }
 
 function updateFunctionComponent(wip: FiberNode) {

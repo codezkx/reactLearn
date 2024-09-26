@@ -9,7 +9,8 @@ import {
 	HostRoot,
 	HostComponent,
 	HostText,
-	FunctionComponent
+	FunctionComponent,
+	Fragment
 } from './workTags';
 import { NoFlags, Update } from './fiberFlags';
 import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
@@ -56,9 +57,8 @@ export function completeWork(wip: FiberNode) {
 			bubbleProperties(wip);
 			return null; // 没有用子节点, 需要在“归”中处理
 		case HostRoot:
-			bubbleProperties(wip);
-			return null;
 		case FunctionComponent:
+		case Fragment:
 			bubbleProperties(wip);
 			return null;
 		default:

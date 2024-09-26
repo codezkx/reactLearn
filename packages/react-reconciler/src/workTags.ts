@@ -1,3 +1,5 @@
+// Fiber node 属性
+
 export type WorkTag =
 	| typeof FunctionComponent
 	| typeof HostRoot

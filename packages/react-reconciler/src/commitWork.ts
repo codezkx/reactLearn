@@ -79,21 +79,47 @@ const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 	}
 };
 
+function recordHostChildrenToDelete(
+	hostChildrenToDelete: FiberNode[],
+	unmountFiber: FiberNode
+) {
+	// 1. 找到第一个 root host 节点
+	let lastOne = hostChildrenToDelete[hostChildrenToDelete.length - 1];
+	// 当前没有存在要删除的Host节点
+	if (!lastOne) {
+		hostChildrenToDelete.push(unmountFiber);
+	} else {
+		// 当前存在要删除的Host节点
+		let node = lastOne.sibling;
+		while (node !== null) {
+			if (unmountFiber === node) {
+				hostChildrenToDelete.push(unmountFiber);
+			}
+			node = node.sibling;
+		}
+	}
+	// 2. 每找到一个host节点, 判断下这个节点是不是 第一个 找到的那个节点的兄弟节点
+}
+
 function commitDeletion(childToDeletion: FiberNode) {
-	// 需要找到根 rootHostNode
-	let rootHostNode: FiberNode | null = null;
+	// 在Fragment之前，只需删除子树的根Host节点，但支持Fragment后，可能需要删除同级多个节点
+	let hostChildrenToDelete: FiberNode[] = [];
 
 	// 递归子树
 	commitNestedComponent(childToDeletion, (unmountFiber) => {
 		switch (unmountFiber.tag) {
 			case HostComponent:
-				if (rootHostNode === null) {
-					rootHostNode = unmountFiber;
+				if (hostChildrenToDelete === null) {
+					recordHostChildrenToDelete(hostChildrenToDelete, unmountFiber);
+					// hostChildrenToDelete = unmountFiber;
+
+					// TODO 解绑ref
 				}
 				return;
 			case HostText:
-				if (rootHostNode === null) {
-					rootHostNode = unmountFiber;
+				if (hostChildrenToDelete === null) {
+					recordHostChildrenToDelete(hostChildrenToDelete, unmountFiber);
+					// hostChildrenToDelete = unmountFiber;
 				}
 				return;
 			case FunctionComponent:
@@ -108,10 +134,12 @@ function commitDeletion(childToDeletion: FiberNode) {
 	});
 
 	// 移除rootHostComponent DOM
-	if (rootHostNode !== null) {
+	if (hostChildrenToDelete.length) {
 		const hostParent = getHostParent(childToDeletion);
-		if (hostParent) {
-			removeChild((rootHostNode as FiberNode).stateNode, hostParent);
+		if (hostParent !== null) {
+			hostChildrenToDelete.forEach((node) => {
+				removeChild(node.stateNode, hostParent);
+			});
 		}
 	}
 	childToDeletion.return = null;
