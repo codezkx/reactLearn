@@ -17,6 +17,7 @@ import {
 } from './updateQueue';
 import { Dispatcher, Dispatch } from 'react/src/currentDispatcher';
 import { scheduleUpdateOnFiber } from './workLoop';
+import { Lane, NoLane, requestUpdateLane } from './fiberLanes';
 interface Hook {
 	// 指向hook得state(数据)
 	memoizedState: any;
@@ -39,14 +40,18 @@ let workInProgressHook: Hook | null = null;
 // update 阶段处理的hook
 let currentHook: Hook | null = null;
 
+let renderLane: Lane = NoLane;
+
 const { currentDispatcher } = sharedInternals;
 
 // 获取函数组件的返回值
-export function renderWithHooks(wip: FiberNode): ReactElementType {
+export function renderWithHooks(wip: FiberNode, lean: Lane): ReactElementType {
 	// 赋值操作
 	currentlyRenderingFiber = wip;
 	// 保存的是 hooks 的链表
 	wip.memoizedState = null;
+
+	renderLane = lean;
 
 	const current = wip.alternate;
 
@@ -67,6 +72,7 @@ export function renderWithHooks(wip: FiberNode): ReactElementType {
 	currentlyRenderingFiber = null;
 	workInProgressHook = null;
 	currentHook = null;
+	renderLane = NoLane;
 	return children;
 }
 
@@ -86,7 +92,11 @@ function updateState<State>(): [State, Dispatch<State>] {
 	const padding = queue.shared.pending;
 
 	if (padding !== null) {
-		const { memoizedState } = processUpdateQueue(hook.memoizedState, padding);
+		const { memoizedState } = processUpdateQueue(
+			hook.memoizedState,
+			padding,
+			renderLane
+		);
 		hook.memoizedState = memoizedState;
 	}
 	const dispatch = queue.dispatch as Dispatch<State>;
@@ -174,9 +184,10 @@ function dispatchSetState<State>(
 	updateQueue: UpdateQueue<State>,
 	action: Action<State>
 ) {
-	const update = createUpdate(action);
+	const lane = requestUpdateLane();
+	const update = createUpdate(action, lane);
 	enqueueUpdate(updateQueue, update);
-	scheduleUpdateOnFiber(fiber);
+	scheduleUpdateOnFiber(fiber, lane);
 }
 
 function mountWorkInProgressHook(): Hook {

@@ -9,6 +9,7 @@ import {
 	createUpdateQueue,
 	UpdateQueue
 } from './updateQueue';
+import { requestUpdateLane } from './fiberLanes';
 // import { SyncLane } from './fiberLanes';
 
 /* 
@@ -28,13 +29,14 @@ export function updateContainer(
 	root: FiberRootNode
 ) {
 	const hostRootFiber = root.current;
+	const lane = requestUpdateLane();
 	// 首屏渲染与更新机制联系起来
-	const update = createUpdate<ReactElementType | null>(element);
+	const update = createUpdate<ReactElementType | null>(element, lane);
 	enqueueUpdate(
 		hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
 		update
 	);
 	// 把根节点参入到render中进行处理以及渲染
-	scheduleUpdateOnFiber(hostRootFiber);
+	scheduleUpdateOnFiber(hostRootFiber, lane);
 	return element;
 }
