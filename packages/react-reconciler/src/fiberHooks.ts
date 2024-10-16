@@ -18,6 +18,25 @@ import {
 import { Dispatcher, Dispatch } from 'react/src/currentDispatcher';
 import { scheduleUpdateOnFiber } from './workLoop';
 import { Lane, NoLane, requestUpdateLane } from './fiberLanes';
+import { Flags, PassiveEffect } from './fiberFlags';
+import { HookHasEffect, Passive } from './hookEffectTags';
+
+type EffectCallback = () => void;
+type EffectDeps = any[] | null;
+export interface Effect {
+	tag: Flags;
+	create: EffectCallback | void;
+	destroy: EffectCallback | void;
+	deps: EffectDeps;
+	// 环状链表; 指向useEffect 的memoizedState
+	next: Effect | null;
+}
+
+export interface FCUpdateQueue<State> extends UpdateQueue<State> {
+	// 指向useEffect环状链表中的最后一个, lastEffect.next指向的是第一个
+	lastEffect: Effect | null;
+}
+
 interface Hook {
 	// 指向hook得state(数据)
 	memoizedState: any;
@@ -77,12 +96,73 @@ export function renderWithHooks(wip: FiberNode, lean: Lane): ReactElementType {
 }
 
 const HooksDispatcherOnMount: Dispatcher = {
-	useState: mounteState
+	useState: mounteState,
+	useEffect: mountEffect
 };
 
 const HooksDispatcherOnUpdateMount: Dispatcher = {
-	useState: updateState
+	useState: updateState,
+	useEffect: updateEffect
 };
+function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+	const hook = mountWorkInProgressHook();
+}
+
+function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+	const hook = mountWorkInProgressHook();
+	const nextDeps = deps === undefined ? null : deps;
+	// 注意区分PassiveEffect与Passive，PassiveEffect是针对fiber.flags
+	// Passive是effect类型，代表useEffect。类似的，Layout代表useLayoutEffect
+	(currentlyRenderingFiber as FiberNode).flags = PassiveEffect;
+	hook.memoizedState = pushEffect(
+		Passive | HookHasEffect,
+		create,
+		undefined,
+		nextDeps
+	);
+}
+
+function pushEffect(
+	hookFlags: Flags,
+	create: EffectCallback | void,
+	destroy: EffectCallback | void,
+	deps: EffectDeps
+): Effect {
+	const effect: Effect = {
+		tag: hookFlags,
+		create,
+		destroy,
+		deps,
+		next: null
+	};
+	const fiber = currentlyRenderingFiber!;
+	const updateQueue = fiber.updateQueue as FCUpdateQueue<any>;
+	if (updateQueue === null) {
+		const updateQueue = createFCUpdateQueue();
+		fiber.updateQueue = updateQueue;
+		effect.next = effect; // 形成环状链表
+		updateQueue.lastEffect = effect;
+	} else {
+		// 插入effect
+		const lastEffect = updateQueue.lastEffect;
+		if (lastEffect === null) {
+			effect.next = effect;
+			updateQueue.lastEffect = effect;
+		} else {
+			const firstEffect = lastEffect.next;
+			lastEffect.next = effect; // 指针指向最后一个指针对象
+			effect.next = firstEffect; // 指针指向第一个指针对象
+			updateQueue.lastEffect = effect; // 更新lastEffect对象, 保持始终是最后一个元素
+		}
+	}
+	return effect;
+}
+
+function createFCUpdateQueue<State>() {
+	const updateQueue = createUpdateQueue<State>() as FCUpdateQueue<State>;
+	updateQueue.lastEffect = null;
+	return updateQueue;
+}
 
 function updateState<State>(): [State, Dispatch<State>] {
 	const hook = updateWorkInProgressHook();
@@ -90,6 +170,8 @@ function updateState<State>(): [State, Dispatch<State>] {
 	// 计算新的state逻辑
 	const queue = hook.updateQueue as UpdateQueue<State>;
 	const padding = queue.shared.pending;
+	// 需要设置为null, 防止保留上一次的状态
+	queue.shared.pending = null;
 
 	if (padding !== null) {
 		const { memoizedState } = processUpdateQueue(

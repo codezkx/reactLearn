@@ -11,6 +11,7 @@ export interface Dispatcher {
 	// const [num, setNum] = useState(0)   0 -> initialState;   [T, Dispatch<T>] -> [num, setNum]
 	// const [num, setNum] = useState((num) => num + 1)   ((num) => num + 1) -> initialState;   [T, Dispatch<T>] -> [num, setNum]
 	useState: <T>(initialState: T | (() => T)) => [T, Dispatch<T>];
+	useEffect: (callback: () => void | void, deps: any[] | void) => void;
 }
 
 const currentDispatcher: { current: Dispatcher | null } = {

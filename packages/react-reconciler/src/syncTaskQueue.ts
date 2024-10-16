@@ -20,6 +20,8 @@ export function flushSyncCallbacks() {
 			console.error('TODO flushSyncCallbacks报错', e);
 		} finally {
 			isFlushingSyncQueue = false;
+			// 置空的原因是: 防止多次的更新callback添加到syncQueue中, 造成意外的结果
+			syncQueue = null;
 		}
 	}
 }

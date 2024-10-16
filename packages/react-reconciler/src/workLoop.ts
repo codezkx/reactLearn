@@ -9,7 +9,12 @@ import {
 	FiberRootNode
 	// PendingPassiveEffects
 } from './fiber';
-import { MutationMask, NoFlags } from './fiberFlags';
+import {
+	MutationMask,
+	NoFlags,
+	PassiveEffect,
+	PassiveMask
+} from './fiberFlags';
 import {
 	getHighestPriorityLane,
 	Lane,
@@ -22,11 +27,18 @@ import {
 } from './fiberLanes';
 import { flushSyncCallbacks, scheduleSyncCallback } from './syncTaskQueue';
 import { HostRoot } from './workTags';
+import {
+	unstable_scheduleCallback as scheduleCallback,
+	unstable_NormalPriority as NormalSchedulerPriority
+} from 'scheduler';
 
 // 权限指针指向全局正在工作的fiberNode
 let workInProgress: FiberNode | null = null;
 // 本次更新的lane
 let wipRootRenderLane: Lanes = NoLanes;
+
+// 与调度effect相关, 防止useEffect多次调度
+let rootDoesHavePassiveEffects = false;
 
 // 初始化  把workInProgress指向第一个需要处理的fiberNode
 function prepareFreshStack(fiber: FiberRootNode, lane: Lane) {
@@ -141,6 +153,20 @@ function commitRoot(root: FiberRootNode) {
 	// 移除对应的lane
 	markRootFinished(root, lane);
 
+	if (
+		(finishedWork.flags & PassiveMask) !== NoFlags ||
+		(finishedWork.subtreeFlags & PassiveMask) !== NoFlags
+	) {
+		if (!rootDoesHavePassiveEffects) {
+			rootDoesHavePassiveEffects = true;
+			// 调用副作用
+			scheduleCallback(NormalSchedulerPriority, () => {
+				// 执行副作用
+				return;
+			});
+		}
+	}
+
 	// 重制
 	root.finishedWork = null;
 	root.finishedLanes = NoFlags;
@@ -158,7 +184,7 @@ function commitRoot(root: FiberRootNode) {
 	if (subtreeHasEffect || rootHasEffect) {
 		// beforeMutation
 		// mutation 处理 Placement
-		commitMutationEffects(finishedWork);
+		commitMutationEffects(finishedWork, root);
 
 		// 将 finishedWork(workInProgress)树赋值给current
 		root.current = finishedWork;

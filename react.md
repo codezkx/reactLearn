@@ -957,13 +957,152 @@ processUpdateQueue方法消费update时需要考虑:
 
 移除「本次更新被消费的lane」
 
+## 实现useEffect
+
+- 实现useEffect需要考虑的:
+
+  - effect数据结构
+
+    > - useEffect
+    >   - memoizedState: 保存其对应的数据结构
+    >   - next: 指向下一个Hook
+    >   - updatQueue: 
+
+  -  effect的工作流程如何介接入先有流程
+
+### effect数据结构
+
+什么事effect?
+
+````jsx
+function App() {
+	useEffect(() => {
+		// create
+    return () => {
+				// destroy
+    }
+	}, [xxx, aaa]);
+	useLayoutEffect(() => {});
+	
+}
+
+````
+
+数据结构需要考虑:
+
+- 不同effect可以共用同一个机制
+
+  - useEffect
+  - useLayoutEffect
+  - useInsertioneffect
+
+- 需要能保存依赖
+
+- 需要能保存create回调
+
+- 需要能保存destroy回调
+
+- 需要能够区分是否需要出发create回调
+
+  - mount时
+
+  - 依赖变化时
+
+    ````
+    const effect = {
+    	tag, // 类型
+    	create, // 回调函数
+    	destroy, // 副作用清除回调函数
+    	deps,
+    	next, // 指向下一个useEffect Hook的指针
+    }
+    ````
+
+    需要区分本节课新增的3个flag:
+
+    - 对于fiber, 新增Passive Effect, 代表「当前fiber本次更新存在副作用」
+    - 对于effect hook, Passive代表「useEffect对应effect」
+    - 对于effect hook, HookHasEffect代表「当前effect本次更新存在副作用」
+
+### Effect工作流程
+
+> render阶段
+>
+> ​	FC FiberNode -> 存在副作用
+>
+> commit阶段
+>
+> ​	调用副作用
+>
+> ​	收集回调
+>
+> 执行副作用
+
+#### 调度副作用
+
+调用需要使用Scheduler(调度器), 调度器也属于React项目下的模块.
+
+> pnpm i -w scheduler
+>
+> pnpm i -D -w @type/scheduler
+
+#### 收集回调
+
+回调包括两类:
+
+- create回调
+- destroy回调
+
+````react
+function App() {
+	const [num, updateNum] = useState(0);
+	useEffect(() => {
+		console.log("App mount");
+	}, [])
+	useEffect(() => {
+		console.log("num change create", num);
+		return () => {
+			console.log("num change destroy", num)
+		}
+	}, [num])
+	return (
+    <div onclick={() => updateNum(num + 1)}>
+    	{num === 0 ? <Child /> : "noop"}
+    </div>
+  )
+}
 
 
+function Child() {
+  useEffect(() => {
+    console.log("child mount");
+    return () => console.log("child unmount")
+  }, [])
+  return 'i am child'
+}
+````
 
+这意味着我们需要收集两类回调:
 
+- unmount时执行的destroy回调
+- update时执行的create回调
 
+#### 执行副作用
 
+本次更新的任何create回调都必须在所有上一次更新的destroy回调执行完后再执行.
 
+整体执行流程包括: 
+
+1. 遍历effect
+2. 首先出发所有unmount effect, 且对于某个fiber, 如果触发了unmount destroy, 本次更新不会再触发update create
+3. 触发所有上次更新的destroy
+4. 触发所有这次更新的create
+
+mount、update时的区别
+
+- mount时: 一定标记Passive Effect
+- update时: deps变化时标记PassiveEffect
+- 
 
 
 

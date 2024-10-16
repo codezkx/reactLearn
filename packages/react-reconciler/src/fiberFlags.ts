@@ -9,11 +9,11 @@ export const Update = 0b00000000000000000000000100;
 // 删除子节点  结构变化相关的flags
 export const ChildDeletion = 0b00000000000000000000010000;
 
-// useEffect
+// 当前更新需要出发useEffect的情况
 export const PassiveEffect = 0b00000000000000000000100000;
 
 // 需要更新节点操作
 export const MutationMask = Placement | Update | ChildDeletion;
 
-// 删除子节点可能触发useEffect destroy
+// 删除子节点(组件)可能触发useEffect destroy
 export const PassiveMask = PassiveEffect | ChildDeletion;
